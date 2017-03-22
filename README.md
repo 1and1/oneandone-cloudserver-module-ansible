@@ -21,6 +21,7 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
     * [oneandone\_load\_balancer](#oneandone_load_balancer)
     * [oneandone\_monitoring\_policy](#oneandone_monitoring_policy)
     * [oneandone\_private\_network](#oneandone_private_network)
+    * [oneandone\_public\_ip](#oneandone_public_ip)
 * [Examples](#examples)
 * [Support](#support)
 * [Testing](#testing)
@@ -483,6 +484,38 @@ The following parameters are supported:
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, update a private network, attach/detach servers to/from a private network: **present**, absent, update, add_remove_member |
+
+### oneandone_public_ip
+
+#### Example Syntax
+
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+    
+      tasks:
+        - name: Create a public IP
+          oneandone_public_ip:
+            auth_token: {your_api_token}
+            datacenter: US
+            reverse_dns: test.com
+            wait: true
+            wait_timeout: 500
+
+#### Parameter Reference
+
+The following parameters are supported:
+
+| Name | Required | Type | Default | Description |
+| --- | :-: | --- | --- | --- |
+| auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| datacenter | no | string | 'US' | ID of the datacenter where the IP will be created (only for unassigned IPs). ('US', 'ES', 'DE', 'GB') |
+| reverse_dns | no | string | none | Reverse DNS name. |
+| type | no | string | 'IPV4' | Type of IP. Currently, only IPV4 is supported. ('IPV4', 'IPV6') |
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| state | no | string | present | Create, delete, or update a public ip: **present**, absent, and update. |
 
 ## Support
 
