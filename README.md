@@ -22,6 +22,7 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
     * [oneandone\_monitoring\_policy](#oneandone_monitoring_policy)
     * [oneandone\_private\_network](#oneandone_private_network)
     * [oneandone\_public\_ip](#oneandone_public_ip)
+    * [oneandone\_vpn](#oneandone_vpn)
 * [Examples](#examples)
 * [Support](#support)
 * [Testing](#testing)
@@ -437,7 +438,7 @@ The following parameters are supported:
 
         - name: Create a private network
           oneandone_private_network:
-            auth_token: {your_api_token}
+            auth_token: {your_api_key}
             name: ansible_private_network
             description: Testing creation of a private network with ansible
             network_address: 70.35.193.100
@@ -447,7 +448,7 @@ The following parameters are supported:
 
         - name: Update a private network
           oneandone_private_network:
-            auth_token: {your_api_token}
+            auth_token: {your_api_key}
             name: ansible_private_network
             description: Testing the update of a private network with ansible
             network_address: 192.168.1.1
@@ -458,7 +459,7 @@ The following parameters are supported:
         
         - name: Attach servers to a private network
           oneandone_private_network:
-            auth_token: {your_api_token}
+            auth_token: {your_api_key}
             name: ansible_private_network
             add_members:
              - E7D36EC025C73796035BF4F171379025
@@ -497,7 +498,7 @@ The following parameters are supported:
       tasks:
         - name: Create a public IP
           oneandone_public_ip:
-            auth_token: {your_api_token}
+            auth_token: {your_api_key}
             datacenter: US
             reverse_dns: test.com
             wait: true
@@ -516,6 +517,40 @@ The following parameters are supported:
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a public ip: **present**, absent, and update. |
+
+### oneandone_vpn
+
+#### Example Syntax
+
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+    
+      tasks:
+        - name: Create a VPN
+          oneandone_vpn:
+            auth_token: {your_api_key}
+            datacenter: US
+            name: ansible VPN
+            description: Create a VPN using ansible
+            wait: true
+            wait_timeout: 500
+
+#### Parameter Reference
+
+The following parameters are supported:
+
+| Name | Required | Type | Default | Description |
+| --- | :-: | --- | --- | --- |
+| auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| name | **yes** | string | none | VPN name. |
+| description | no | string | none | VPN description. |
+| datacenter | no | string | none | ID of the datacenter where the VPN will be created. |
+| vpn | no | string | none | ID or the name of the VPN that will be used in update or delete requests. **Required for `absent` and `update` states**. |
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
 
 ## Support
 
