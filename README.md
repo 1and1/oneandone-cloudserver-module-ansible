@@ -20,6 +20,7 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
     * [oneandone\_firewall\_policy](#oneandone_firewall_policy)
     * [oneandone\_load\_balancer](#oneandone_load_balancer)
     * [oneandone\_monitoring\_policy](#oneandone_monitoring_policy)
+    * [oneandone\_private\_network](#oneandone_private_network)
 * [Examples](#examples)
 * [Support](#support)
 * [Testing](#testing)
@@ -421,6 +422,67 @@ The following parameters are supported:
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a monitoring policy: **present**, absent, update |
+
+### oneandone_private_network
+
+#### Example Syntax
+
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+    
+      tasks:
+
+        - name: Create a private network
+          oneandone_private_network:
+            auth_token: {your_api_token}
+            name: ansible_private_network
+            description: Testing creation of a private network with ansible
+            network_address: 70.35.193.100
+            subnet_mask: 255.0.0.0
+            datacenter: DE
+            wait: false
+
+        - name: Update a private network
+          oneandone_private_network:
+            auth_token: {your_api_token}
+            name: ansible_private_network
+            description: Testing the update of a private network with ansible
+            network_address: 192.168.1.1
+            subnet_mask: 255.255.255.0
+            datacenter: DE
+            wait: false
+            state: update
+        
+        - name: Attach servers to a private network
+          oneandone_private_network:
+            auth_token: {your_api_token}
+            name: ansible_private_network
+            add_members:
+             - E7D36EC025C73796035BF4F171379025
+             - 8A7D5122BDC173B6E52223878CEF2748
+             - D5C5C1D01249DE9B88BE3DAE973AA090
+            state: add_remove_member
+            wait: false
+
+#### Parameter Reference
+
+The following parameters are supported:
+
+| Name | Required | Type | Default | Description |
+| --- | :-: | --- | --- | --- |
+| auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| name | **yes** | string | none | Private network name. |
+| description | no | string | none | Private network description. |
+| datacenter | no | string | none | ID of the datacenter where the private network will be created. ('US', 'ES', 'DE', 'GB') |
+| network_address | no | string | none | Private network address (valid IP). |
+| subnet_mask | no | string | none | Subnet mask (valid subnet for the given IP). |
+| add_members | no | array | none | Array of desired servers ids to be attached to a private network. |
+| remove_members | no | string | none | Array of desired servers ids to be detached from a private network.|
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| state | no | string | present | Create, delete, update a private network, attach/detach servers to/from a private network: **present**, absent, update, add_remove_member |
 
 ## Support
 
