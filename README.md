@@ -49,7 +49,7 @@ To enable the API token:
 5. In the API section in the lower part of the screen, click Disabled next to the API KEY.
 6. Click OK to activate the API key.
 
-Ansible must also be installed before the ProfitBricks module can be used. Please review the official [Ansible Documentation](http://docs.ansible.com/ansible/intro_installation.html) for more information on installing Ansible.
+Ansible must also be installed before the 1&1 module can be used. Please review the official [Ansible Documentation](http://docs.ansible.com/ansible/intro_installation.html) for more information on installing Ansible.
 
 Lastly, the 1&1 module requires the 1&1 Python Cloud Server SDK to be installed. This can easily be accomplished with Python PyPI.
 
@@ -61,7 +61,7 @@ Lastly, the 1&1 module requires the 1&1 Python Cloud Server SDK to be installed.
 
     Download and extract with `curl`:
 
-        mkdir -p profitbricks-module-ansible && curl -L https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/tarball/master | tar zx -C oneandone-cloudserver-module-ansible/ --strip-components=1
+        mkdir -p oneandone-cloudserver-module-ansible && curl -L https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/tarball/master | tar zx -C oneandone-cloudserver-module-ansible/ --strip-components=1
 
     Clone the GitHub repository locally:
 
@@ -424,7 +424,7 @@ The following parameters are supported:
 
 ## Support
 
-You are welcome to contact us with questions or comments using the **Community** section of the [ProfitBricks DevOps Central](https://devops.profitbricks.com/). Please report any feature requests or issues using GitHub issue tracker.
+You are welcome to contact us with questions or comments using the **Community** section of the [1&1 Cloud Community](https://www.1and1.com/cloud-community). Please report any feature requests or issues using GitHub issue tracker.
 
 * [1&1 Cloud Server API](https://cloudpanel-api.1and1.com/documentation/v1/en/documentation.html) documentation.
 * Ask a question or discuss at [1&1 Cloud Community](https://www.1and1.com/cloud-community).
