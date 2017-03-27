@@ -23,6 +23,8 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
     * [oneandone\_private\_network](#oneandone_private_network)
     * [oneandone\_public\_ip](#oneandone_public_ip)
     * [oneandone\_vpn](#oneandone_vpn)
+    * [oneandone\_users](#oneandone_users)
+    * [oneandone\_roles](#oneandone_roles)    
 * [Examples](#examples)
 * [Support](#support)
 * [Testing](#testing)
@@ -548,6 +550,97 @@ The following parameters are supported:
 | description | no | string | none | VPN description. |
 | datacenter | no | string | none | ID of the datacenter where the VPN will be created. |
 | vpn | no | string | none | ID or the name of the VPN that will be used in update or delete requests. **Required for `absent` and `update` states**. |
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
+
+### oneandone_users
+
+#### Example Syntax
+
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+    
+      tasks:
+        - name: Create a user
+          oneandone_users:
+            auth_token: {your_api_key}
+            name: ansible_test_user
+            description: Create a user with ansible - test
+            password: {password}
+            email: user@example.com
+            wait: true
+            wait_timeout: 500
+
+#### Parameter Reference
+
+The following parameters are supported:
+
+| Name | Required | Type | Default | Description |
+| --- | :-: | --- | --- | --- |
+| auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| name | **yes** | string | none | User's name. |
+| description | no | string | none | User's description. |
+| password | **yes** | string | none | User's password. Pass must contain at least 8 characters using uppercase letters, numbers and other special symbols. |
+| email | no | string | none | User's e-mail. |
+| user_state | no | string | none | Allows to enable or disable users. ('ACTIVE', 'DISABLE') |
+| active | no | boolean | false | Set true for enabling API |
+| user_ips | no | string | none | Array of new IPs from which access to API will be available. |
+| remove_ip | no | string | none | An IP that will be deleted and API access for it will be forbidden. |
+| change_api_key | no | string | none | User's API key (token for accessing the API) will be changed to the provided value. |
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| state | no | string | present | Create, delete, or update a user: **present**, absent, and update. |
+
+### oneandone_roles
+
+#### Example Syntax
+
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+    
+      tasks:
+        - name: Create a VPN
+          oneandone_vpn:
+            auth_token: {your_api_key}
+            name: ansible_test_role
+            wait: true
+            wait_timeout: 500
+
+#### Parameter Reference
+
+The following parameters are supported:
+
+| Name | Required | Type | Default | Description |
+| --- | :-: | --- | --- | --- |
+| auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| name | **yes** | string | none | Role name. |
+| description | no | string | none | Role description. |
+| role_state | no | string | none | Allows to enable or disable the role. ('ACTIVE', 'DISABLE') |
+| role | no | string | none | ID or the name of the role that will be used in update or delete requests. **Required for `absent` and `update` states**. |
+| servers | no | object | none | Servers permissions object attributes (boolean values)</br> `show`- Allows to list servers. </br> `create`- Allows to create servers. </br> `delete`- Allows to delete servers. </br> `set_name`- Allows to change server name. </br> `set_description`- Allows to change server description. </br> `start`- Allows to start servers. </br> `restart`- Allows to restart servers. </br> `shutdown`- Allows to shutdown servers. </br> `resize`- Allows to resize servers. </br> `reinstall`- Allows to reinstall servers. </br> `clone`- Allows to clone servers. </br> `manage_snapshot`- Allows to manage snapshots. </br> `assign_ip`- Allows to assign new IPs </br> `manage_dvd`- Allows to manage DVD images. </br> `access_kvm_console`- Allows to access servers using KVM console. |
+| images | no | object | none | Images permissions object attributes (boolean values)</br> `show`- Allows to list images. </br> `create`- Allows to create images. </br> `delete`- Allows to delete images. </br> `set_name`- Allows to change image name. </br> `set_description`- Allows to change image description. </br> `disable_automatic_creation`- Allows to change image creation policy. |
+| shared_storages | no | object | none | Shared storages permissions object attributes (boolean values)</br> `show`- Allows to list shared storages. </br> `create`- Allows to create shared storages. </br> `delete`- Allows to delete shared storages. </br> `set_name`- Allows to change shared storage name. </br> `set_description`- Allows to change shared storage description. </br> `manage_attached_servers`- Allows to manage servers attached. </br> `access`- Allows to manage shared storage permissions. </br> `resize`- Allows to resize shared storages. |
+| firewalls | no | object | none | Firewall policies permissions object attributes (boolean values)</br> `show`- Allows to list firewall policies. </br> `create`- Allows to create firewall policies. </br> `delete`- Allows to delete firewall policies. </br> `set_name`- Allows to change firewall policy name. </br> `set_description`- Allows to change firewall policy description. </br> `manage_rules`- Allows to manage firewall policy rules. </br> `manage_attached_server_ips`- Allows to add or remove servers from firewall policies. </br> `clone`- Allows to clone firewall policies. |
+| load_balancers | no | object | none | Load balancers permissions object attributes (boolean values)</br> `show`- Allows to list load balancers. </br> `create`- Allows to create load balancers. </br> `delete`- Allows to delete load balancers. </br> `set_name`- Allows to change load balancer name. </br> `set_description`- Allows to change load balancer description. </br> `manage_rules`- Allows to manage load balancer rules. </br> `manage_attached_server_ips`- Allows to add or remove servers from load balancers. </br> `modify`- Allows to edit load balancers. |
+| ips | no | object | none | Public IPs permissions object attributes (boolean values)</br> `show`- Allows to list public IPs. </br> `create`- Allows to create public IPs. </br> `delete`- Allows to delete public IPs. </br> `release`- Allows to release IPs. </br> `set_reverse_dns`- Allows to change reverse DNS name. |
+| private_networks | no | object | none | Private networks permissions object attributes (boolean values)</br> `show`- Allows to list private networks. </br> `create`- Allows to create private networks. </br> `delete`- Allows to delete private networks. </br> `set_name`- Allows to change private network name. </br> `set_description`- Allows to change private network description. </br> `set_network_info`- Allows to edit private network configuration. </br> `manage_attached_servers`- Allows to manage servers attached. |
+| vpns | no | object | none | VPNs permissions object attributes (boolean values)</br> `show`- Allows to list VPNs. </br> `create`- Allows to create VPNs. </br> `delete`- Allows to delete VPNs. </br> `set_name`- Allows to change VPN name. </br> `set_description`- Allows to change VPN description. </br> `download_file`- Allows to download VPN configuration file. |
+| monitoring_centers | no | object | none | Monitoring center permissions object attributes (boolean values)</br> `show`- Allows to list monitored resources. |
+| monitoring_policies | no | object | none | Monitoring policies permissions object attributes (boolean values)</br> `show`- Allows to list monitoring policies. </br> `create`- Allows to create monitoring policies. </br> `delete`- Allows to delete monitoring policies. </br> `set_name`- Allows to change monitoring policy name. </br> `set_description`- Allows to change monitoring policy description. </br> `set_email`- Allows to change monitoring policy email. </br> `modify_resources`- Allows to make changes to thresholds. </br> `manage_ports`- Allows to add or remove port alerts to monitoring policy. </br> `manage_processes`- Allows to add or remove process alerts to monitoring policy. </br> `manage_attached_servers`- Allows to manage servers attached to monitoring policy. </br> `clone`- Allows to clone monitoring policies. |
+| backups | no | object | none | Backups permissions object attributes (boolean values)</br> `show`- Allows to list backup accounts. </br> `create`- Allows to create backup accounts. </br> `delete`- Allows to delete backup accounts. |
+| logs | no | object | none | Logs permissions object attributes (boolean values)</br> `show`- Allows to list logs. |
+| users | no | object | none | Users permissions object attributes (boolean values)</br> `show`- Allows to list users. </br> `create`- Allows to create users. </br> `delete`- Allows to delete users. </br> `set_description`- Allows to change user description. </br> `set_email`- Allows to change user e-mail. </br> `set_password`- Allows to change user password. </br> `manage_api`- Allows to manage the Cloud Panel from the API. </br> `enable`- Allows to enable users. </br> `disable`- Allows to disable users. </br> `change_role`- Allows to change user role. |
+| roles | no | object | none | Roles permissions object attributes (boolean values)</br> `show`- Allows to list roles. </br> `create`- Allows to create roles. </br> `delete`- Allows to delete roles. </br> `set_name`- Allows to change role name. </br> `set_description`- Allows to change role description. </br> `manage_users`- Allows to manage users' role. </br> `modify`- Allows to change role permissions. </br> `clone`- Allows to clone roles. |
+| usages | no | object | none | Usages permissions object attributes (boolean values)</br> `show`- Allows to list usages. |
+| interactive_invoices | no | object | none | Interactive invoices permissions object attributes (boolean values)</br> `show`- Allows to list interactive invoices. |
+| add_users | no | array | none | A list of user ids that will be added to an existing role. |
+| remove_users | no | array | none | A list of user ids that will be removed from an existing role. |
+| role_clone_name | no | string | none | A name that will be assigned to the cloned role. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
