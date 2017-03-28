@@ -158,16 +158,34 @@ def _find_firewall_policy(oneandone_conn, name):
     return firewall_policy
 
 
-def _add_server_ips(module, oneandone_conn, firewall_id, server_ips):
+def _find_machine(oneandone_conn, instance_id):
+    """
+    Given a instance_id, validates that the machine exists
+    whether it is a proper ID or a name.
+    Returns the machine if one was found, else None.
+    """
+    machine = None
+    machines = oneandone_conn.list_servers(per_page=1000)
+    for _machine in machines:
+        if instance_id in (_machine['id'], _machine['name']):
+            machine = _machine
+            break
+    return machine
+
+
+
+def _add_server_ips(module, oneandone_conn, firewall_id, server_ids):
     """
     Assigns servers to a firewall policy.
     """
     try:
         attach_servers = []
 
-        for server_ip in server_ips:
+        for _server_id in server_ids:
+            server = _find_machine(oneandone_conn, _server_id)
             attach_server = oneandone.client.AttachServer(
-                server_ip_id=server_ip
+                server_id=server['id'],
+                server_ip_id=next(iter(server['ips'] or []), None)['id']
             )
             attach_servers.append(attach_server)
 
