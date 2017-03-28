@@ -32,11 +32,11 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
 
 ## Description
 
-Ansible is an IT automation tool that allows users to configure, deploy, and orchestrate advanced tasks such as continuous deployments or zero downtime rolling updates. The 1&1 Cloud Server module for Ansible leverages the 1&1 Cloud Server API.
+Ansible is an IT automation tool that allows users to configure, deploy, and orchestrate advanced tasks such as continuous deployments or zero-downtime rolling updates. The 1&1 Cloud Server module for Ansible leverages the 1&1 Cloud Server API.
 
 ## Getting Started
 
-The 1&1 module for Ansible has a couple of requirements:
+The 1&1 module for Ansible has the following requirements:
 
 * 1&1 account (API key)
 * Python
@@ -48,27 +48,27 @@ Before you begin, you need to have a 1&1 account.
 To enable the API token:
 
 1. Log in to your 1&1 Control Panel and select the relevant package.
-2. Click 1&1 Cloud Panel from the Cloud Server section of the control panel.
-3. Select Users from the Management section of the Infrastructure menu.
+2. Click **1&1 Cloud Panel** from the Cloud Server section of the control panel.
+3. Select **Users** from the **Management** section of the **Infrastructure** menu.
 4. Select the user who needs the API token.
-5. In the API section in the lower part of the screen, click Disabled next to the API KEY.
-6. Click OK to activate the API key.
+5. In the API section in the lower part of the screen, click **Disabled** next to the API KEY.
+6. Click **OK** to activate the API key.
 
 Ansible must also be installed before the 1&1 module can be used. Please review the official [Ansible Documentation](http://docs.ansible.com/ansible/intro_installation.html) for more information on installing Ansible.
 
-Lastly, the 1&1 module requires the 1&1 Python Cloud Server SDK to be installed. This can easily be accomplished with Python PyPI.
+The 1&1 module requires the 1&1 Python Cloud Server SDK to be installed. This can easily be accomplished with Python PyPI:
 
     pip install 1and1
 
 ## Installation
 
-1. The 1&1 Cloud Server module for Ansible must first be downloaded from GitHub. This can be accomplished a few different ways such as downloading and extracting the archive using `curl` or cloning the GitHub repository locally.
+1. Download the 1&1 Cloud Server module for Ansible from GitHub. This can be accomplished a few different ways such as downloading and extracting the archive using `curl` or cloning the GitHub repository locally.
 
-    Download and extract with `curl`:
+**Download and extract with `curl`:**
 
         mkdir -p oneandone-cloudserver-module-ansible && curl -L https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/tarball/master | tar zx -C oneandone-cloudserver-module-ansible/ --strip-components=1
 
-    Clone the GitHub repository locally:
+**Clone the GitHub repository locally:**
 
         git clone https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible
 
@@ -78,7 +78,9 @@ Lastly, the 1&1 module requires the 1&1 Python Cloud Server SDK to be installed.
     * Environment variable: `ANSIBLE_LIBRARY`
     * Command line parameter: `ansible-playbook --module-path [path]`
 
-    2a. The preferred method is to update the Ansible configuration with the module path. To include the path globally for all users, edit the `/etc/ansible/ansible.cfg` file and add `library = /path/to/module/oneandone` under the **[default]** section. For example:
+**Method 1: Update the Ansible configuration with the module path.**
+
+To include the path globally for all users, edit the `/etc/ansible/ansible.cfg` file and add `library = /path/to/module/oneandone` under the **[default]** section. For example:
 
         [default]
         library = /path/to/oneandone-cloudserver-module-ansible/oneandone
@@ -90,11 +92,13 @@ Lastly, the 1&1 module requires the 1&1 Python Cloud Server SDK to be installed.
     * `.ansible.cfg` in the user home directory
     * `/etc/ansible/ansible.cfg`
 
-    2b. The module path can also be set using an environment variable. This variable will be lost once the terminal session is closed:
+**Method 2: Set the module path using an environment variable.**
+
+This variable will be lost once the terminal session is closed:
 
         export ANSIBLE_LIBRARY=/path/to/oneandone-cloudserver-module-ansible/oneandone
 
-    2c. The module path can be overridden with an `ansible-playbook` command line parameter:
+**Method 3: Override the module path with an `ansible-playbook` command line parameter:**
 
         ansible-playbook --module-path /path/to/oneandone-cloudserver-module-ansible/oneandone playbook.yml
 
@@ -108,7 +112,7 @@ Credentials can be supplied within a Playbook with the following parameter:
 
 ### Ansible Playbooks
 
-Ansible leverages YAML manifest files called Playbooks. The Playbook will describe the infrastructure to build and is processed from top down. Here is a simple Playbook that will provision two identical servers:
+Ansible uses YAML manifest files called Playbooks. The Playbook will describe the infrastructure to build and is processed from top down. Here is a simple Playbook that will provision two identical servers:
 
 `example.yml`:
 
@@ -132,15 +136,15 @@ Ansible leverages YAML manifest files called Playbooks. The Playbook will descri
 
 ### Execute a Playbook
 
-The `ansible-playbook` command will execute the above Playbook.
+The `ansible-playbook` command will execute the above Playbook:
 
     ansible-playbook example.yml
 
 ### Wait for Requests
 
-When a request to create a resource such as a server is submitted to the 1&1 Cloud Server API, that request is accepted immediately while the provisioning occurs on the backend. This means the request can appear finished while provisioning is still occurring.
+When a request to create a resource (such as a server) is submitted to the 1&1 Cloud Server API, that request is accepted immediately while the provisioning occurs on the backend. This means the request can appear  to have finished while provisioning is still occurring.
 
-Sometimes requests must be told to wait until they finish before continuing to provision dependent resources. For example, a server must finish provisioning before a new IP can be added to the server.
+Sometimes requests must be told to wait until they finish before continuing to provision dependent resources. For example, a server must finish provisioning before a new IP address can be added to the server.
 
 The 1&1 Cloud Server module includes two resource parameters to address this scenario:
 
@@ -656,7 +660,6 @@ You are welcome to contact us with questions or comments using the **Community**
 
 ## Testing
 
-Make sure you have  a valid api_key to use in the playbooks (set as **auth_token** variable).
 
 Change into the `tests` directory and execute the Playbooks.
 
