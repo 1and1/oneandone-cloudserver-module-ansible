@@ -263,13 +263,13 @@ def _wait_for_machine_creation_completion(oneandone_conn,
         'Timed out waiting for machine competion for %s' % machine['id'])
 
 
-def _create_machine(module, oneandone_conn, hostname, fixed_instance_size,
-                    datacenter, appliance, ssh_key, wait,
-                    wait_timeout):
+def _create_machine(module, oneandone_conn, hostname, description, fixed_instance_size,
+                    datacenter, appliance, ssh_key, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
             oneandone.client.Server(name=hostname,
+                                    description=description,
                                     fixed_instance_size_id=fixed_instance_size,
                                     appliance_id=appliance,
                                     datacenter_id=datacenter,
@@ -346,6 +346,7 @@ def create_machine(module, oneandone_conn):
     created machines's hostname, id and ip addresses.
     """
     hostname = module.params.get('hostname')
+    description = module.params.get('description')
     auto_increment = module.params.get('auto_increment')
     count = module.params.get('count')
     fixed_instance_size_id = module.params.get('fixed_instance_size')
@@ -397,6 +398,7 @@ def create_machine(module, oneandone_conn):
                 module=module,
                 oneandone_conn=oneandone_conn,
                 hostname=name,
+                description=description,
                 fixed_instance_size=fixed_instance_size['id'],
                 datacenter=datacenter['id'],
                 appliance=appliance['id'],
@@ -559,6 +561,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             hostname=dict(type='str'),
+            description=dict(type='str'),
             appliance=dict(type='str'),
             fixed_instance_size=dict(type='str'),
             count=dict(type='int', default=1),
@@ -569,6 +572,7 @@ def main():
             datacenter=dict(
                 choices=DATACENTERS,
                 default='US'),
+            private_network_id=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             state=dict(type='str', default='present'),
@@ -618,3 +622,4 @@ def main():
 from ansible.module_utils.basic import *
 
 main()
+
