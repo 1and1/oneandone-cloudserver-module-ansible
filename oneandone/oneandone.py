@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 DOCUMENTATION = '''
 ---
 module: oneandone
@@ -33,19 +39,24 @@ options:
     choices: [ "present", "absent", "running", "stopped" ]
   auth_token:
     description:
-      - Authenticating API token provided by 1&1.
+      - Authenticating API token provided by 1&1. Overrides the
+        ONEANDONE_AUTH_TOKEN environement variable.
     required: true
   hostname:
     description:
       - The hostname or ID of the machine. Only used when state is 'present'.
     required: true when state is 'present', false otherwise.
+  description:
+    description:
+      - The description of the machine.
+    required: false
   appliance:
     description:
-      - The operating system for the machine. This must be the appliance id.
+      - The operating system name or ID for the machine.
     required: true for 'present' state, false otherwise
   fixed_instance_size:
     description:
-      - The instance size for the machine.
+      - The instance size name or ID of the machine.
     required: true for 'present' state, false otherwise
     choices: [ "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL" ]
   datacenter:
@@ -54,6 +65,10 @@ options:
     required: false
     default: US
     choices: [ "US", "ES", "DE", "GB" ]
+  private_network:
+    description:
+      - The private network name or ID of the machine.
+    required: false
   instance_ids:
     description:
       - List of machine IDs or hostnames.
@@ -87,9 +102,12 @@ options:
     choices: ["yes", "no"]
 
 requirements:
-     - "1and1"
-     - "python >= 2.6"
-author: Matt Baldwin (baldwin@stackpointcloud.com)
+  - "1and1"
+  - "python >= 2.6"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -98,7 +116,7 @@ EXAMPLES = '''
 
 - oneandone:
     auth_token: oneandone_private_api_key
-    hostname: node%02d.stackpointcloud.com
+    hostname: node%02d
     fixed_instance_size: XL
     datacenter: US
     appliance: C5A349786169F140BCBC335675014C08
@@ -109,7 +127,7 @@ EXAMPLES = '''
 
 - oneandone:
     auth_token: oneandone_private_api_key
-    hostname: node%02d.stackpointcloud.com
+    hostname: node%02d
     fixed_instance_size: XL
     datacenter: ES
     appliance: C5A349786169F140BCBC335675014C08
@@ -124,9 +142,9 @@ EXAMPLES = '''
     auth_token: oneandone_private_api_key
     state: absent
     instance_ids:
-      - 'node01.stackpointcloud.com'
-      - 'node02.stackpointcloud.com'
-      - 'node03.stackpointcloud.com'
+      - 'node01'
+      - 'node02'
+      - 'node03'
 
 # Starting Machines.
 
@@ -134,9 +152,9 @@ EXAMPLES = '''
     auth_token: oneandone_private_api_key
     state: running
     instance_ids:
-      - 'node01.stackpointcloud.com'
-      - 'node02.stackpointcloud.com'
-      - 'node03.stackpointcloud.com'
+      - 'node01'
+      - 'node02'
+      - 'node03'
 
 # Stopping Machines
 
@@ -144,10 +162,9 @@ EXAMPLES = '''
     auth_token: oneandone_private_api_key
     state: stopped
     instance_ids:
-      - 'node01.stackpointcloud.com'
-      - 'node02.stackpointcloud.com'
-      - 'node03.stackpointcloud.com'
-
+      - 'node01'
+      - 'node02'
+      - 'node03'
 '''
 
 RETURN = '''
@@ -184,58 +201,56 @@ ONEANDONE_MACHINE_STATES = (
 )
 
 
-def _find_datacenter(oneandone_conn, datacenter_id):
+def _find_datacenter(oneandone_conn, datacenter):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the datacenter exists by ID or name.
+    Returns the datacenter ID.
     """
-    datacenter = None
     for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+        if datacenter in (_datacenter['id'], _datacenter['country_code']):
+            return _datacenter['id']
 
 
-def _find_fixed_instance_size(oneandone_conn, fixed_instance_size_id):
+def _find_fixed_instance_size(oneandone_conn, fixed_instance_size):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the fixed instance size exists by ID or name.
+    Return the instance size ID.
     """
-    fixed_instance_size = None
     for _fixed_instance_size in oneandone_conn.fixed_server_flavors():
-        if fixed_instance_size_id in (_fixed_instance_size['id'],
-                                      _fixed_instance_size['name']):
-            fixed_instance_size = _fixed_instance_size
-            break
-    return fixed_instance_size
+        if fixed_instance_size in (_fixed_instance_size['id'],
+                                   _fixed_instance_size['name']):
+            return _fixed_instance_size['id']
 
 
-def _find_appliance(oneandone_conn, appliance_id):
-    appliance = None
-
+def _find_appliance(oneandone_conn, appliance):
+    """
+    Validates the appliance exists by ID or name.
+    Return the appliance ID.
+    """
     for _appliance in oneandone_conn.list_appliances(q='IMAGE'):
-        if appliance_id in (_appliance['id']):
-            appliance = _appliance
-            break
-    return appliance
+        if appliance in (_appliance['id'], _appliance['name']):
+            return _appliance['id']
 
 
-def _find_machine(oneandone_conn, instance_id):
+def _find_private_network(oneandone_conn, private_network):
     """
-    Given a instance_id, validates that the machine exists
-    whether it is a proper ID or a name.
-    Returns the machine if one was found, else None.
+    Validates the private network exists by ID or name.
+    Return the private network ID.
     """
-    machine = None
-    machines = oneandone_conn.list_servers(per_page=1000)
-    for _machine in machines:
-        if instance_id in (_machine['id'], _machine['name']):
-            machine = _machine
-            break
-    return machine
+    for _private_network in oneandone_conn.list_private_networks():
+        if private_network in (_private_network['name'],
+                               _private_network['id']):
+            return _private_network['id']
+
+
+def _find_machine(oneandone_conn, instance):
+    """
+    Validates that the machine exists whether by ID or name.
+    Returns the machine if one was found.
+    """
+    for _machine in oneandone_conn.list_servers(per_page=1000):
+        if instance in (_machine['id'], _machine['name']):
+            return _machine
 
 
 def _wait_for_machine_creation_completion(oneandone_conn,
@@ -263,17 +278,20 @@ def _wait_for_machine_creation_completion(oneandone_conn,
         'Timed out waiting for machine competion for %s' % machine['id'])
 
 
-def _create_machine(module, oneandone_conn, hostname, fixed_instance_size,
-                    datacenter, appliance, ssh_key, wait,
-                    wait_timeout):
+def _create_machine(module, oneandone_conn, hostname, description,
+                    fixed_instance_size_id, datacenter_id, appliance_id,
+                    ssh_key, private_network_id, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
-            oneandone.client.Server(name=hostname,
-                                    fixed_instance_size_id=fixed_instance_size,
-                                    appliance_id=appliance,
-                                    datacenter_id=datacenter,
-                                    rsa_key=ssh_key))
+            oneandone.client.Server(
+                name=hostname,
+                description=description,
+                fixed_instance_size_id=fixed_instance_size_id,
+                appliance_id=appliance_id,
+                datacenter_id=datacenter_id,
+                rsa_key=ssh_key,
+                private_network_id=private_network_id))
 
         if wait:
             _wait_for_machine_creation_completion(
@@ -287,13 +305,15 @@ def _create_machine(module, oneandone_conn, hostname, fixed_instance_size,
 
 def _serialize_machine(machine):
     """
-    Standard represenation for a machine as returned by various tasks::
+    Standard represenation for a machine as returned by various tasks:
 
         {
-            'id': 'instance_id'
-            'hostname': 'machine_hostname',
-            'tags': [],
-            'ip_addresses': [
+            "id": "instance_id"
+            "hostname": "machine_hostname",
+            "description": "description",
+            "first_password": "password",
+            "tags": [],
+            "ip_addresses": [
                 {
                     "address": "147.75.194.227",
                     "address_family": 4,
@@ -315,6 +335,8 @@ def _serialize_machine(machine):
     machine_data = {}
     machine_data['id'] = machine['id']
     machine_data['hostname'] = machine['name']
+    machine_data['description'] = machine['description']
+    machine_data['first_password'] = machine['first_password']
     machine_data['ip_addresses'] = [
         {
             'address': addr_data['ip'],
@@ -346,61 +368,63 @@ def create_machine(module, oneandone_conn):
     created machines's hostname, id and ip addresses.
     """
     hostname = module.params.get('hostname')
+    description = module.params.get('description')
     auto_increment = module.params.get('auto_increment')
     count = module.params.get('count')
-    fixed_instance_size_id = module.params.get('fixed_instance_size')
-    datacenter_id = module.params.get('datacenter')
-    appliance_id = module.params.get('appliance')
+    fixed_instance_size = module.params.get('fixed_instance_size')
+    datacenter = module.params.get('datacenter')
+    appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
+    private_network = module.params.get('private_network')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    private_network_id = None
 
-    datacenter = _find_datacenter(oneandone_conn, datacenter_id)
-    if datacenter is None:
+    datacenter_id = _find_datacenter(oneandone_conn, datacenter)
+    if datacenter_id is None:
         module.fail_json(
-            msg='datacenter %s not found.' % datacenter_id)
+            msg='datacenter %s not found.' % datacenter)
 
-    fixed_instance_size = _find_fixed_instance_size(
+    fixed_instance_size_id = _find_fixed_instance_size(
         oneandone_conn,
-        fixed_instance_size_id)
-    if fixed_instance_size is None:
+        fixed_instance_size)
+    if fixed_instance_size_id is None:
         module.fail_json(
-            msg='fixed_instance_size %s note found.' % fixed_instance_size_id)
+            msg='fixed_instance_size %s note found.' % fixed_instance_size)
 
-    appliance = _find_appliance(oneandone_conn, appliance_id)
-    if datacenter is None:
+    appliance_id = _find_appliance(oneandone_conn, appliance)
+    if appliance_id is None:
         module.fail_json(
-            msg='datacenter %s not found.' % datacenter_id)
+            msg='datacenter %s not found.' % appliance)
+
+    if private_network:
+        private_network_id = _find_private_network(
+            oneandone_conn,
+            private_network)
+        if private_network_id is None:
+            module.fail_json(
+                msg='private network %s not found.' % private_network)
 
     if auto_increment:
-        # If the name has %02d or %03d somewhere in the host name, drop the
-        # increment count in that location
-        if '%02d' in hostname or '%03d' in hostname:
-            str_formatted_name = hostname
-        # Otherwise, default to name-01, name-02, onwards
-        else:
-            # str_formatted_name = "%s-%%02d" % hostname
-            str_formatted_name = "%s-%%01d" % hostname
-
-        hostnames = [
-            str_formatted_name % i
-            for i in xrange(1, count + 1)
-        ]
-
+        hostnames = _auto_increment_hostname(count, hostname)
+        descriptions = _auto_increment_description(count, description)
     else:
         hostnames = [hostname] * count
+        descriptions = [description] * count
 
     machines = []
-    for name in hostnames:
+    for index, name in enumerate(hostnames):
         machines.append(
             _create_machine(
                 module=module,
                 oneandone_conn=oneandone_conn,
                 hostname=name,
-                fixed_instance_size=fixed_instance_size['id'],
-                datacenter=datacenter['id'],
-                appliance=appliance['id'],
+                description=descriptions[index],
+                fixed_instance_size_id=fixed_instance_size_id,
+                datacenter_id=datacenter_id,
+                appliance_id=appliance_id,
                 ssh_key=ssh_key,
+                private_network_id=private_network_id,
                 wait=wait,
                 wait_timeout=wait_timeout))
 
@@ -428,8 +452,8 @@ def remove_machine(module, oneandone_conn):
             msg='instance_ids should be a list of machine ids or names.')
 
     removed_machines = []
-    for instance_id in instance_ids:
-        machine = _find_machine(oneandone_conn, instance_id)
+    for instance in instance_ids:
+        machine = _find_machine(oneandone_conn, instance)
         if machine is None:
             continue
 
@@ -511,10 +535,11 @@ def startstop_machine(module, oneandone_conn):
             while wait_timeout > time.time():
                 time.sleep(5)
                 machine = oneandone_conn.get_server(machine['id'])  # refresh
-                if state == 'stopped' and machine['status']['state'] == 'POWERED_OFF':
+                machine_state = machine['status']['state']
+                if state == 'stopped' and machine_state == 'POWERED_OFF':
                     operation_completed = True
                     break
-                if state == 'running' and machine['status']['state'] == 'POWERED_ON':
+                if state == 'running' and machine_state == 'POWERED_ON':
                     operation_completed = True
                     break
             if not operation_completed:
@@ -531,44 +556,53 @@ def startstop_machine(module, oneandone_conn):
     }
 
 
-def _generate_hostnames(template, count, start_index=1):
+def _auto_increment_hostname(count, hostname):
     """
-    Returns an array of hostnames based on a template. If the template
-    contains '%02d' or '%03d', the count is substituted in, otherwise
-    we append '-%02d' at the end of the template.
+    Allow a custom incremental count in the hostname when defined with the
+    string formatting (%) operator. Otherwise, increment using name-01,
+    name-02, name-03, and so forth.
     """
-    # If the name has %02d or %03d somewhere in the host name, drop the
-    # increment count in that location
-    if '%02d' in template or '%03d' in template:
-        str_formatted_name = template
-    # Otherwise, default to name-01, name-02, onwards
-    else:
-        # str_formatted_name = "%s-%%02d" % template
-        str_formatted_name = "%s-%%01d" % template
-
-    end_index = count + start_index
+    if '%' not in hostname:
+        hostname = "%s-%%01d" % hostname
 
     return [
-        str_formatted_name % i
-        for i in xrange(start_index, end_index)
-        # for i in xrange(1, count + 1)
+        hostname % i
+        for i in xrange(1, count + 1)
     ]
+
+
+def _auto_increment_description(count, description):
+    """
+    Allow the incremental count in the description when defined with the
+    string formatting (%) operator. Otherwise, repeat the same description.
+    """
+    if '%' in description:
+        return [
+            description % i
+            for i in xrange(1, count + 1)
+        ]
+    else:
+        return [description] * count
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            auth_token=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             hostname=dict(type='str'),
+            description=dict(type='str'),
             appliance=dict(type='str'),
             fixed_instance_size=dict(type='str'),
             count=dict(type='int', default=1),
             ssh_key=dict(type='raw', default=None),
             auto_increment=dict(type='bool', default=True),
             instance_ids=dict(type='list'),
-            auth_token=dict(type='str'),
             datacenter=dict(
                 choices=DATACENTERS,
                 default='US'),
+            private_network=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             state=dict(type='str', default='present'),
@@ -580,12 +614,11 @@ def main():
 
     if not module.params.get('auth_token'):
         module.fail_json(
-            msg='auth_token parameter is required.')
-
-    auth_token = module.params.get('auth_token')
+            msg='The "auth_token" parameter or ' +
+            'ONEANDONE_AUTH_TOKEN environment variable is required.')
 
     oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=auth_token)
+        api_token=module.params.get('auth_token'))
 
     state = module.params.get('state')
 
