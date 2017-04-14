@@ -106,9 +106,10 @@ This variable will be lost once the terminal session is closed:
 
 ### Authentication
 
-Credentials can be supplied within a Playbook with the following parameter:
+Credentials can be supplied using the following:
 
-* **auth_token**
+* `ONEANDONE_AUTH_TOKEN` environment variable.
+* **auth_token** Playbook parameter.
 
 ### Ansible Playbooks
 
@@ -203,9 +204,11 @@ The following parameters are supported:
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | hostname | **yes** | string | none | The name of the server(s). |
+| description | no | string | none | The description of the server(s). |
 | fixed_instance_size | **yes** | string | none | Size of the ID desired for the server. ('S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL') |
-| appliance | **yes** | string | none | Image that will be installed on server |
+| appliance | **yes** | string | none | Name or ID of the image that will be installed on server |
 | datacenter | no | string | none | ID of the datacenter where the server will be created. ('US', 'ES', 'DE', 'GB') |
+| private_network | no | string | none | Name or ID of the private network to connect the server. |
 | ssh_key | no | string | none | Put a valid public SSH Key to be copied into the server during creation. Then you will be able to access to the server using your SSH keys. |
 | auto_increment | no | boolean | True | Whether or not to increment created servers. |
 | count | no | integer | 1 | The number of servers to create. |
