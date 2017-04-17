@@ -545,7 +545,7 @@ def startstop_machine(module, oneandone_conn):
             if not operation_completed:
                 module.fail_json(
                     msg="Timeout waiting for machine %s to get to state %s" % (
-                        devide.id, state))
+                        instance_id, state))
 
         changed = True
         machines.append(machine)
