@@ -1,0 +1,65 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Create a monitoring policy
+      oneandone_monitoring_policy:
+        name: ansible monitoring policy
+        description: Testing creation of a monitoring policy with ansible
+        email: amel@stackpointcloud.com
+        agent: true
+        thresholds:
+         - 
+           cpu:
+             warning:
+               value: 80
+               alert: false
+             critical:
+               value: 92
+               alert: false
+         - 
+           ram:
+             warning:
+               value: 80
+               alert: false
+             critical:
+               value: 90
+               alert: false
+         - 
+           disk:
+             warning:
+               value: 80
+               alert: false
+             critical:
+               value: 90
+               alert: false
+         - 
+           internal_ping:
+             warning:
+               value: 50
+               alert: false
+             critical:
+               value: 100
+               alert: false
+         - 
+           transfer:
+             warning:
+               value: 1000
+               alert: false
+             critical:
+               value: 2000
+               alert: false
+        ports:
+         -
+           protocol: TCP
+           port: 22
+           alert_if: RESPONDING
+           email_notification: false
+        processes:
+         -
+           process: test
+           alert_if: NOT_RUNNING
+           email_notification: false
+        wait: true

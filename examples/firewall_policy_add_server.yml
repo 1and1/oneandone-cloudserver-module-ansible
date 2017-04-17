@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Add server to a firewall policy
+      oneandone_firewall_policy:
+        name: ansible-firewawall-policy
+        add_server_ips:
+         - server01
+        wait: true
+        wait_timeout: 500
+        state: update

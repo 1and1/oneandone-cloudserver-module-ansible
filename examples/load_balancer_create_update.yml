@@ -1,0 +1,42 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Create a load balancer
+      oneandone_load_balancer:
+        name: ansible load balancer
+        description: Testing creation of load balancer with ansible
+        health_check_test: TCP
+        health_check_interval: 40
+        persistence: true
+        persistence_time: 1200
+        method: ROUND_ROBIN
+        datacenter: US
+        rules:
+         -
+           protocol: TCP
+           port_balancer: 80
+           port_server: 80
+           source: 0.0.0.0
+        wait: true
+        wait_timeout: 500
+    - name: Update a load balancer
+      oneandone_load_balancer:
+        name: ansible load balancer
+        description: Testing the update of a load balancer with ansible
+        add_rules:
+         -
+           protocol: TCP
+           port_balancer: 70
+           port_server: 70
+           source: 0.0.0.0
+         -
+           protocol: TCP
+           port_balancer: 60
+           port_server: 60
+           source: 0.0.0.0
+        wait: true
+        wait_timeout: 500
+        state: update

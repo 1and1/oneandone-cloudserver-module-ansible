@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+
+    - name: Add members
+      oneandone_private_network:
+        name: backup_network
+        add_members:
+         - E7D36EC025C73796035BF4F171379025
+         - 8A7D5122BDC173B6E52223878CEF2748
+         - D5C5C1D01249DE9B88BE3DAE973AA090
+        state: add_remove_member
+        wait: false
