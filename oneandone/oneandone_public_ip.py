@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 DOCUMENTATION = '''
 ---
 module: oneandone_public_ip
@@ -223,6 +229,9 @@ def delete_public_ip(module, oneandone_conn):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            auth_token=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             reverse_dns=dict(type='str'),
             datacenter=dict(
                 choices=DATACENTERS,
@@ -230,7 +239,6 @@ def main():
             type=dict(
                 choices=TYPES,
                 default='IPV4'),
-            auth_token=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             state=dict(type='str', default='present'),

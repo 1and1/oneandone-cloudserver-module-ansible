@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 DOCUMENTATION = '''
 ---
 module: oneandone_vpn
@@ -182,7 +188,9 @@ def remove_vpn(module, oneandone_conn):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            auth_token=dict(type='str'),
+            auth_token=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             vpn=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),

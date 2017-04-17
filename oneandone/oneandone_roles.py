@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 DOCUMENTATION = '''
 ---
 module: oneandone_roles
@@ -313,6 +319,9 @@ def remove_role(module, oneandone_conn):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            auth_token=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             name=dict(type='str'),
             description=dict(type='str'),
             role_state=dict(
@@ -337,7 +346,6 @@ def main():
             add_users=dict(type='list', default=[]),
             remove_users=dict(type='list', default=[]),
             role_clone_name=dict(type='str'),
-            auth_token=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             state=dict(type='str', default='present'),

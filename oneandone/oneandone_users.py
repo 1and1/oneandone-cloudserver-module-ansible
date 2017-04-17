@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 DOCUMENTATION = '''
 ---
 module: oneandone_users
@@ -271,6 +277,9 @@ def remove_user(module, oneandone_conn):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            auth_token=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
             name=dict(type='str'),
             description=dict(type='str'),
             password=dict(type='str'),
@@ -279,7 +288,6 @@ def main():
             user_ips=dict(type='list', default=[]),
             remove_ip=dict(type='str'),
             change_api_key=dict(type='bool', default=False),
-            auth_token=dict(type='str'),
             user_state=dict(
                 choices=USER_STATES),
             wait=dict(type='bool', default=True),
