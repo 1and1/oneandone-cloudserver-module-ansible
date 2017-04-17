@@ -78,7 +78,7 @@ options:
     required: true
   datacenter:
     description:
-      - ID of the datacenter where the load balancer will be created.
+      - ID or country code of the datacenter where the load balancer will be created.
     default: US
     choices: [ "US", "ES", "DE", "GB" ]
     required: false
@@ -115,7 +115,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 from copy import copy
@@ -158,33 +158,26 @@ def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, w
         'Timed out waiting for load balancer competion for %s' % load_balancer['id'])
 
 
-def _find_load_balancer(oneandone_conn, name):
+def _find_load_balancer(oneandone_conn, load_balancer):
     """
     Given a name, validates that the load balancer exists
     whether it is a proper ID or a name.
     Returns the load_balancer if one was found, else None.
     """
-    load_balancer = None
-    load_balancers = oneandone_conn.list_load_balancers(per_page=1000)
-    for _load_balancer in load_balancers:
-        if name in (_load_balancer['id'], _load_balancer['name']):
-            load_balancer = _load_balancer
-            break
-    return load_balancer
+    for _load_balancer in oneandone_conn.list_load_balancers(per_page=1000):
+        if load_balancer in (_load_balancer['id'],
+                             _load_balancer['name']):
+            return _load_balancer
 
 
-def _find_datacenter(oneandone_conn, datacenter_id):
+def _find_datacenter(oneandone_conn, datacenter):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the datacenter exists by ID or name.
+    Returns the datacenter ID.
     """
-    datacenter = None
     for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+        if datacenter in (_datacenter['id'], _datacenter['country_code']):
+            return _datacenter['id']
 
 
 def _add_server_ips(module, oneandone_conn, load_balancer_id, server_ips):
@@ -349,19 +342,18 @@ def create_load_balancer(module, oneandone_conn):
         persistence = module.params.get('persistence')
         persistence_time = module.params.get('persistence_time')
         method = module.params.get('method')
-        datacenter_id = module.params.get('datacenter')
+        datacenter = module.params.get('datacenter')
         rules = module.params.get('rules')
         wait = module.params.get('wait')
         wait_timeout = module.params.get('wait_timeout')
 
         load_balancer_rules = []
-        datacenter = {}
 
-        if datacenter_id is not None:
-            datacenter = _find_datacenter(oneandone_conn, datacenter_id)
-            if datacenter is None:
+        if datacenter is not None:
+            datacenter_id = _find_datacenter(oneandone_conn, datacenter)
+            if datacenter_id is None:
                 module.fail_json(
-                    msg='datacenter %s not found.' % datacenter_id)
+                    msg='datacenter %s not found.' % datacenter)
 
         for rule in rules:
             load_balancer_rule = oneandone.client.LoadBalancerRule(
@@ -381,7 +373,7 @@ def create_load_balancer(module, oneandone_conn):
             persistence=persistence,
             persistence_time=persistence_time,
             method=method,
-            datacenter_id=datacenter['id']
+            datacenter_id=datacenter_id
         )
 
         load_balancer = oneandone_conn.create_load_balancer(

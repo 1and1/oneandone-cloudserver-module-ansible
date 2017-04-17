@@ -203,7 +203,7 @@ ONEANDONE_MACHINE_STATES = (
 
 def _find_datacenter(oneandone_conn, datacenter):
     """
-    Validates the datacenter exists by ID or name.
+    Validates the datacenter exists by ID or country code.
     Returns the datacenter ID.
     """
     for _datacenter in oneandone_conn.list_datacenters():

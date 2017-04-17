@@ -66,7 +66,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 EXAMPLES = '''
@@ -149,35 +149,25 @@ def _wait_for_firewall_policy_creation_completion(oneandone_conn, firewall_polic
         'Timed out waiting for network competion for %s' % firewall_policy['id'])
 
 
-def _find_firewall_policy(oneandone_conn, name):
+def _find_firewall_policy(oneandone_conn, firewall_policy):
     """
-    Given a name, validates that the network exists
-    whether it is a proper ID or a name.
-    Returns the network if one was found, else None.
+    Validates that the firewall policy exists whether by ID or name.
+    Returns the firewall policy if one was found.
     """
-    firewall_policy = None
-    firewall_policies = oneandone_conn.list_firewall_policies(per_page=1000)
-    for _firewall_policy in firewall_policies:
-        if name in (_firewall_policy['id'], _firewall_policy['name']):
-            firewall_policy = _firewall_policy
-            break
-    return firewall_policy
+    for _firewall_policy in oneandone_conn.list_firewall_policies(per_page=1000):
+        if firewall_policy in (_firewall_policy['id'],
+                               _firewall_policy['name']):
+            return _firewall_policy
 
 
-def _find_machine(oneandone_conn, instance_id):
+def _find_machine(oneandone_conn, instance):
     """
-    Given a instance_id, validates that the machine exists
-    whether it is a proper ID or a name.
-    Returns the machine if one was found, else None.
+    Validates that the machine exists whether by ID or name.
+    Returns the machine if one was found.
     """
-    machine = None
-    machines = oneandone_conn.list_servers(per_page=1000)
-    for _machine in machines:
-        if instance_id in (_machine['id'], _machine['name']):
-            machine = _machine
-            break
-    return machine
-
+    for _machine in oneandone_conn.list_servers(per_page=1000):
+        if instance in (_machine['id'], _machine['name']):
+            return _machine
 
 
 def _add_server_ips(module, oneandone_conn, firewall_id, server_ids):

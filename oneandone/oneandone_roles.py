@@ -56,7 +56,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 HAS_ONEANDONE_SDK = True
@@ -69,19 +69,15 @@ except ImportError:
 ROLE_STATES = ['ACTIVE', 'DISABLE']
 
 
-def _find_role(oneandone_conn, name):
+def _find_role(oneandone_conn, role):
     """
     Given a name, validates that the role exists
     whether it is a proper ID or a name.
     Returns the role if one was found, else None.
     """
-    role = None
-    roles = oneandone_conn.list_roles(per_page=1000)
-    for _role in roles:
-        if name in (_role['id'], _role['name']):
-            role = _role
-            break
-    return role
+    for _role in oneandone_conn.list_roles(per_page=1000):
+        if role in (_role['id'], _role['name']):
+            return _role
 
 
 def _wait_for_role_creation_completion(oneandone_conn, role, wait_timeout):

@@ -58,7 +58,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 HAS_ONEANDONE_SDK = True
@@ -71,19 +71,14 @@ except ImportError:
 USER_STATES = ['ACTIVE', 'DISABLED']
 
 
-def _find_user(oneandone_conn, name):
+def _find_user(oneandone_conn, user):
     """
-    Given a name, validates that the user exists
-    whether it is a proper ID or a name.
-    Returns the user if one was found, else None.
+    Validates that the user exists by ID or a name.
+    Returns the user if one was found.
     """
-    user = None
-    users = oneandone_conn.list_users(per_page=1000)
-    for _user in users:
-        if name in (_user['id'], _user['name']):
-            user = _user
-            break
-    return user
+    for _user in oneandone_conn.list_users(per_page=1000):
+        if user in (_user['id'], _user['name']):
+            return _user
 
 
 def _wait_for_user_creation_completion(oneandone_conn, user, wait_timeout):

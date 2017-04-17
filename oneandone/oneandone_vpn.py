@@ -51,7 +51,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 HAS_ONEANDONE_SDK = True
@@ -87,33 +87,24 @@ def _wait_for_vpn_creation_completion(oneandone_conn, vpn, wait_timeout):
         'Timed out waiting for VPN competion for %s' % vpn['id'])
 
 
-def _find_vpn(oneandone_conn, name):
+def _find_vpn(oneandone_conn, vpn):
     """
-    Given a name, validates that the vpn exists
-    whether it is a proper ID or a name.
-    Returns the vpn if one was found, else None.
+    Validates that the vpn exists by ID or a name.
+    Returns the vpn if one was found.
     """
-    vpn = None
-    vpns = oneandone_conn.list_vpns(per_page=1000)
-    for _vpn in vpns:
-        if name in (_vpn['id'], _vpn['name']):
-            vpn = _vpn
-            break
-    return vpn
+    for _vpn in oneandone_conn.list_vpns(per_page=1000):
+        if vpn in (_vpn['id'], _vpn['name']):
+            return _vpn
 
 
-def _find_datacenter(oneandone_conn, datacenter_id):
+def _find_datacenter(oneandone_conn, datacenter):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the datacenter exists by ID or country code.
+    Returns the datacenter ID.
     """
-    datacenter = None
     for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+        if datacenter in (_datacenter['id'], _datacenter['country_code']):
+            return _datacenter['id']
 
 
 def update_vpn(module, oneandone_conn):
@@ -147,9 +138,15 @@ def create_vpn(module, oneandone_conn):
     try:
         name = module.params.get('name')
         description = module.params.get('description')
-        datacenter_id = module.params.get('datacenter_id')
+        datacenter = module.params.get('datacenter')
         wait = module.params.get('wait')
         wait_timeout = module.params.get('wait_timeout')
+
+        if datacenter is not None:
+            datacenter_id = _find_datacenter(oneandone_conn, datacenter)
+            if datacenter_id is None:
+                module.fail_json(
+                    msg='datacenter %s not found.' % datacenter)
 
         _vpn = oneandone.client.Vpn(name,
                                     description,

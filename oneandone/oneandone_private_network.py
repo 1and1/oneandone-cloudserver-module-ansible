@@ -62,7 +62,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Matt Baldwin (baldwin@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 EXAMPLES = '''
@@ -134,33 +134,24 @@ except ImportError:
 DATACENTERS = ['US', 'ES', 'DE', 'GB']
 
 
-def _find_datacenter(oneandone_conn, datacenter_id):
+def _find_datacenter(oneandone_conn, datacenter):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the datacenter exists by ID or country code.
+    Returns the datacenter ID.
     """
-    datacenter = None
     for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+        if datacenter in (_datacenter['id'], _datacenter['country_code']):
+            return _datacenter['id']
 
 
-def _find_network(oneandone_conn, name):
+def _find_private_network(oneandone_conn, private_network):
     """
-    Given a name, validates that the network exists
-    whether it is a proper ID or a name.
-    Returns the network if one was found, else None.
+    Validates the private network exists by ID or name.
+    Return the private network if one was found.
     """
-    network = None
-    networks = oneandone_conn.list_private_networks(per_page=1000)
-    for _network in networks:
-        if name in (_network['id'], _network['name']):
-            network = _network
-            break
-    return network
+    for _private_network in oneandone_conn.list_private_networks(per_page=1000):
+        if private_network in (_private_network['id'], _private_network['name']):
+            return _private_network
 
 
 def _wait_for_network_creation_completion(oneandone_conn,
@@ -190,19 +181,14 @@ def _wait_for_network_creation_completion(oneandone_conn,
         'Timed out waiting for network competion for %s' % network['id'])
 
 
-def _find_machine(oneandone_conn, instance_id):
+def _find_machine(oneandone_conn, instance):
     """
-    Given a instance_id, validates that the machine exists
-    whether it is a proper ID or a name.
-    Returns the machine if one was found, else None.
+    Validates that the machine exists whether by ID or name.
+    Returns the machine if one was found.
     """
-    machine = None
-    machines = oneandone_conn.list_servers(per_page=1000)
-    for _machine in machines:
-        if instance_id in (_machine['id'], _machine['name']):
-            machine = _machine
-            break
-    return machine
+    for _machine in oneandone_conn.list_servers(per_page=1000):
+        if instance in (_machine['id'], _machine['name']):
+            return _machine
 
 
 def _add_member(module, oneandone_conn, name, members):
@@ -248,7 +234,7 @@ def addremove_member(module, oneandone_conn):
     name = module.params.get('name')
     add_members = module.params.get('add_members')
     remove_members = module.params.get('remove_members')
-    private_network = _find_network(oneandone_conn, name)
+    private_network = _find_private_network(oneandone_conn, name)
     network = None
 
     if add_members:
@@ -269,7 +255,7 @@ def addremove_member(module, oneandone_conn):
                            oneandone_conn,
                            private_network['id'],
                            instance['id'])
-        network = _find_network(oneandone_conn, name)
+        network = _find_private_network(oneandone_conn, name)
 
     try:
         return network
@@ -291,17 +277,15 @@ def create_network(module, oneandone_conn):
     description = module.params.get('description')
     network_address = module.params.get('network_address')
     subnet_mask = module.params.get('subnet_mask')
-    datacenter_id = module.params.get('datacenter')
+    datacenter = module.params.get('datacenter')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
-    datacenter = {}
-
-    if datacenter_id is not None:
-        datacenter = _find_datacenter(oneandone_conn, datacenter_id)
-        if datacenter is None:
+    if datacenter is not None:
+        datacenter_id = _find_datacenter(oneandone_conn, datacenter)
+        if datacenter_id is None:
             module.fail_json(
-                msg='datacenter %s not found.' % datacenter_id)
+                msg='datacenter %s not found.' % datacenter)
 
     try:
         network = oneandone_conn.create_private_network(
@@ -310,7 +294,7 @@ def create_network(module, oneandone_conn):
                 description=description,
                 network_address=network_address,
                 subnet_mask=subnet_mask,
-                datacenter_id=datacenter['id']
+                datacenter_id=datacenter_id
             ))
 
         if wait:
@@ -318,8 +302,8 @@ def create_network(module, oneandone_conn):
                 oneandone_conn,
                 network,
                 wait_timeout)
-            network = _find_network(oneandone_conn,
-                                    network['id'])
+            network = _find_private_network(oneandone_conn,
+                                            network['id'])
 
         return network
     except Exception as e:
@@ -361,7 +345,7 @@ def remove_network(module, oneandone_conn):
     """
     try:
         name = module.params.get('name')
-        private_network = _find_network(oneandone_conn, name)
+        private_network = _find_private_network(oneandone_conn, name)
         private_network = oneandone_conn.delete_private_network(private_network['id'])
 
         return private_network

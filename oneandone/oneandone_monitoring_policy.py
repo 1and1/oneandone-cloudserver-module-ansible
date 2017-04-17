@@ -249,7 +249,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 HAS_ONEANDONE_SDK = True
@@ -285,33 +285,15 @@ def _wait_for_monitoring_policy_creation_completion(oneandone_conn, monitoring_p
         'Timed out waiting for monitoring policy competion for %s' % monitoring_policy['id'])
 
 
-def _find_monitoring_policy(oneandone_conn, name):
+def _find_monitoring_policy(oneandone_conn, monitoring_policy):
     """
     Given a name, validates that the monitoring policy exists
     whether it is a proper ID or a name.
     Returns the monitoring_policy if one was found, else None.
     """
-    monitoring_policy = None
-    monitoring_policies = oneandone_conn.list_monitoring_policies(per_page=1000)
-    for _monitoring_policy in monitoring_policies:
-        if name in (_monitoring_policy['id'], _monitoring_policy['name']):
-            monitoring_policy = _monitoring_policy
-            break
-    return monitoring_policy
-
-
-def _find_datacenter(oneandone_conn, datacenter_id):
-    """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
-    """
-    datacenter = None
-    for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+    for _monitoring_policy in oneandone_conn.list_monitoring_policies(per_page=1000):
+        if monitoring_policy in (_monitoring_policy['id'], _monitoring_policy['name']):
+            return _monitoring_policy
 
 
 def _add_ports(module, oneandone_conn, monitoring_policy_id, ports):

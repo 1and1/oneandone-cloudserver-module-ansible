@@ -55,7 +55,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (amel@stackpointcloud.com)
+author: Amel Ajdinovic (@aajdinov)
 '''
 
 EXAMPLES = '''
@@ -91,18 +91,14 @@ DATACENTERS = ['US', 'ES', 'DE', 'GB']
 TYPES = ['IPV4', 'IPV6']
 
 
-def _find_datacenter(oneandone_conn, datacenter_id):
+def _find_datacenter(oneandone_conn, datacenter):
     """
-    Given datacenter_id, validates the datacenter exists whether
-    it is a proper ID or name. If the datacenter cannot be found,
-    return none.
+    Validates the datacenter exists by ID or country code.
+    Returns the datacenter ID.
     """
-    datacenter = None
     for _datacenter in oneandone_conn.list_datacenters():
-        if datacenter_id in (_datacenter['id'], _datacenter['country_code']):
-            datacenter = _datacenter
-            break
-    return datacenter
+        if datacenter in (_datacenter['id'], _datacenter['country_code']):
+            return _datacenter['id']
 
 
 def _wait_for_public_ip_creation_completion(oneandone_conn,
@@ -141,16 +137,16 @@ def create_public_ip(module, oneandone_conn):
     any public IP was added.
     """
     reverse_dns = module.params.get('reverse_dns')
-    datacenter_id = module.params.get('datacenter')
+    datacenter = module.params.get('datacenter')
     type = module.params.get('type')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
-    if datacenter_id is not None:
-        datacenter = _find_datacenter(oneandone_conn, datacenter_id)
-        if datacenter is None:
+    if datacenter is not None:
+        datacenter_id = _find_datacenter(oneandone_conn, datacenter)
+        if datacenter_id is None:
             module.fail_json(
-                msg='datacenter %s not found.' % datacenter_id)
+                msg='datacenter %s not found.' % datacenter)
 
     try:
         public_ip = oneandone_conn.create_public_ip(
