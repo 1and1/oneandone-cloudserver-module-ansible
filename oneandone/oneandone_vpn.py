@@ -226,7 +226,7 @@ def main():
     elif state == 'present':
         if not module.params.get('name'):
             module.fail_json(
-                msg="name parameter is required for a new monitoring policy.")
+                msg="name parameter is required for a new VPN.")
         try:
             module.exit_json(**create_vpn(module, oneandone_conn))
         except Exception as e:
