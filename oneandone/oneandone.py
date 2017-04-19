@@ -303,57 +303,13 @@ def _create_machine(module, oneandone_conn, hostname, description,
         module.fail_json(msg=str(e))
 
 
-def _serialize_machine(machine):
-    """
-    Standard represenation for a machine as returned by various tasks:
-
-        {
-            "id": "instance_id"
-            "hostname": "machine_hostname",
-            "description": "description",
-            "first_password": "password",
-            "tags": [],
-            "ip_addresses": [
-                {
-                    "address": "147.75.194.227",
-                    "address_family": 4,
-                },
-                {
-                    "address": "2604:1380:2:5200::3",
-                    "address_family": 6,
-                },
-                {
-                    "address": "10.100.11.129",
-                    "address_family": 4,
-                }
-            ],
-            "public_ipv4": "147.75.194.227",
-            "public_ipv6": "2604:1380:2:5200::3",
-        }
-
-    """
-    machine_data = {}
-    machine_data['id'] = machine['id']
-    machine_data['hostname'] = machine['name']
-    machine_data['description'] = machine['description']
-    machine_data['first_password'] = machine['first_password']
-    machine_data['ip_addresses'] = [
-        {
-            'address': addr_data['ip'],
-            'address_family': addr_data['type'],
-        }
-        for addr_data in machine['ips']
-    ]
-    # Also include each IPs as a key for easier lookup in roles.
-    # Key names:
-    # - public_ipv4
-    # - public_ipv6
-    for ipdata in machine_data['ip_addresses']:
-        if ipdata['address_family'] == 'IPV6':
-            machine_data['public_ipv6'] = ipdata['address']
-        elif ipdata['address_family'] == 'IPV4':
-            machine_data['public_ipv4'] = ipdata['address']
-    return machine_data
+def _insert_network_data(machine):
+    for addr_data in machine['ips']:
+        if addr_data['type'] == 'IPV6':
+            machine['public_ipv6'] = addr_data['ip']
+        elif addr_data['type'] == 'IPV4':
+            machine['public_ipv4'] = addr_data['ip']
+    return machine
 
 
 def create_machine(module, oneandone_conn):
@@ -430,7 +386,7 @@ def create_machine(module, oneandone_conn):
 
     return {
         'changed': True if machines else False,
-        'machines': [_serialize_machine(machine) for machine in machines],
+        'machines': [_insert_network_data(machine) for machine in machines],
     }
 
 
@@ -552,7 +508,7 @@ def startstop_machine(module, oneandone_conn):
 
     return {
         'changed': changed,
-        'machines': [_serialize_machine(machine) for machine in machines]
+        'machines': [_insert_network_data(machine) for machine in machines]
     }
 
 
