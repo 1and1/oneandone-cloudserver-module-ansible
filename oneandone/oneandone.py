@@ -384,10 +384,10 @@ def create_machine(module, oneandone_conn):
                 wait=wait,
                 wait_timeout=wait_timeout))
 
-    return {
-        'changed': True if machines else False,
-        'machines': [_insert_network_data(machine) for machine in machines],
-    }
+    changed = True if machines else False
+    machines = [_insert_network_data(machine) for machine in machines]
+
+    return (changed, machines)
 
 
 def remove_machine(module, oneandone_conn):
@@ -420,13 +420,13 @@ def remove_machine(module, oneandone_conn):
             module.fail_json(
                 msg="failed to terminate the machine: %s" % str(e))
 
-    return {
-        'changed': True if removed_machines else False,
-        'machines': [{
-            'id': machine['id'],
-            'hostname': machine['name'],
-        } for machine in removed_machines]
-    }
+    changed = True if removed_machines else False
+    machines = [{
+        'id': machine['id'],
+        'hostname': machine['name'],
+    } for machine in removed_machines]
+
+    return (changed, machines)
 
 
 def startstop_machine(module, oneandone_conn):
@@ -506,10 +506,9 @@ def startstop_machine(module, oneandone_conn):
         changed = True
         machines.append(machine)
 
-    return {
-        'changed': changed,
-        'machines': [_insert_network_data(machine) for machine in machines]
-    }
+    machines = [_insert_network_data(machine) for machine in machines]
+
+    return (changed, machines)
 
 
 def _auto_increment_hostname(count, hostname):
@@ -580,13 +579,13 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_machine(module, oneandone_conn))
+            (changed, machines) = remove_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state in ('running', 'stopped'):
         try:
-            module.exit_json(**startstop_machine(module, oneandone_conn))
+            (changed, machines) = startstop_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -599,9 +598,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for new instance." % param)
         try:
-            module.exit_json(**create_machine(module, oneandone_conn))
+            (changed, machines) = create_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, machines=machines)
 
 
 from ansible.module_utils.basic import *
