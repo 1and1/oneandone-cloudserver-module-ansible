@@ -42,6 +42,12 @@ options:
       - Authenticating API token provided by 1&1. Overrides the
         ONEANDONE_AUTH_TOKEN environement variable.
     required: true
+  datacenter:
+    description:
+      - The datacenter location.
+    required: false
+    default: US
+    choices: [ "US", "ES", "DE", "GB" ]
   hostname:
     description:
       - The hostname or ID of the machine. Only used when state is 'present'.
@@ -59,12 +65,22 @@ options:
       - The instance size name or ID of the machine.
     required: true for 'present' state, false otherwise
     choices: [ "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL" ]
-  datacenter:
+  vcore:
     description:
-      - The datacenter location.
-    required: false
-    default: US
-    choices: [ "US", "ES", "DE", "GB" ]
+      - The total number of processors.
+    required: true with cores_per_processor, ram, and hdds
+  cores_per_processor:
+    description:
+      - The number of cores per processor.
+    required: true with vcore, ram, and hdds
+  ram:
+    description:
+      - The amount of RAM memory.
+    required: true with vcore, cores_per_processor, and hdds
+  hdds:
+    description:
+      - A list of hard disks with nested "size" and "is_main" properties.
+    required: true with vcore, cores_per_processor, and ram
   private_network:
     description:
       - The private network name or ID of the machine.
@@ -128,7 +144,12 @@ EXAMPLES = '''
 - oneandone:
     auth_token: oneandone_private_api_key
     hostname: node%02d
-    fixed_instance_size: XL
+    vcore: 2
+    cores_per_processor: 4
+    ram: 8.0
+    hdds:
+      - size: 50
+        is_main: false
     datacenter: ES
     appliance: C5A349786169F140BCBC335675014C08
     count: 3
@@ -279,8 +300,9 @@ def _wait_for_machine_creation_completion(oneandone_conn,
 
 
 def _create_machine(module, oneandone_conn, hostname, description,
-                    fixed_instance_size_id, vcore, cores_per_processor, ram, hdds,
-                    datacenter_id, appliance_id, ssh_key, private_network_id, wait, wait_timeout):
+                    fixed_instance_size_id, vcore, cores_per_processor, ram,
+                    hdds, datacenter_id, appliance_id, ssh_key,
+                    private_network_id, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
@@ -572,7 +594,8 @@ def _validate_custom_hardware_params(module):
 
 
 def _validate_hardware_params(module):
-    if bool(module.params.get('fixed_instance_size')) ^ bool(_validate_custom_hardware_params(module)):
+    if (bool(module.params.get('fixed_instance_size')) ^
+       bool(_validate_custom_hardware_params(module))):
         return True
     return False
 
@@ -632,8 +655,11 @@ def main():
 
     elif state == 'present':
         if not _validate_hardware_params(module):
-            module.fail_json(msg="Either fixed_size_instance parameter or full custom hardware specification parameters"
-                             " must be provided (mutually exclusive).")
+            module.fail_json(
+                msg="Either 'fixed_size_instance' or custom hardware specs "
+                    "'vcore', 'cores_per_processor', 'ram', and 'hdds'"
+                    " must be provided (mutually exclusive).")
+
         for param in ('hostname',
                       'appliance',
                       'datacenter'):
