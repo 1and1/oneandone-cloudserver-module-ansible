@@ -42,6 +42,12 @@ options:
       - Authenticating API token provided by 1&1. Overrides the
         ONEANDONE_AUTH_TOKEN environement variable.
     required: true
+  datacenter:
+    description:
+      - The datacenter location.
+    required: false
+    default: US
+    choices: [ "US", "ES", "DE", "GB" ]
   hostname:
     description:
       - The hostname or ID of the machine. Only used when state is 'present'.
@@ -59,12 +65,22 @@ options:
       - The instance size name or ID of the machine.
     required: true for 'present' state, false otherwise
     choices: [ "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL" ]
-  datacenter:
+  vcore:
     description:
-      - The datacenter location.
-    required: false
-    default: US
-    choices: [ "US", "ES", "DE", "GB" ]
+      - The total number of processors.
+    required: true with cores_per_processor, ram, and hdds
+  cores_per_processor:
+    description:
+      - The number of cores per processor.
+    required: true with vcore, ram, and hdds
+  ram:
+    description:
+      - The amount of RAM memory.
+    required: true with vcore, cores_per_processor, and hdds
+  hdds:
+    description:
+      - A list of hard disks with nested "size" and "is_main" properties.
+    required: true with vcore, cores_per_processor, and ram
   private_network:
     description:
       - The private network name or ID of the machine.
@@ -128,7 +144,12 @@ EXAMPLES = '''
 - oneandone:
     auth_token: oneandone_private_api_key
     hostname: node%02d
-    fixed_instance_size: XL
+    vcore: 2
+    cores_per_processor: 4
+    ram: 8.0
+    hdds:
+      - size: 50
+        is_main: false
     datacenter: ES
     appliance: C5A349786169F140BCBC335675014C08
     count: 3
@@ -279,8 +300,9 @@ def _wait_for_machine_creation_completion(oneandone_conn,
 
 
 def _create_machine(module, oneandone_conn, hostname, description,
-                    fixed_instance_size_id, datacenter_id, appliance_id,
-                    ssh_key, private_network_id, wait, wait_timeout):
+                    fixed_instance_size_id, vcore, cores_per_processor, ram,
+                    hdds, datacenter_id, appliance_id, ssh_key,
+                    private_network_id, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
@@ -288,10 +310,13 @@ def _create_machine(module, oneandone_conn, hostname, description,
                 name=hostname,
                 description=description,
                 fixed_instance_size_id=fixed_instance_size_id,
+                vcore=vcore,
+                cores_per_processor=cores_per_processor,
+                ram=ram,
                 appliance_id=appliance_id,
                 datacenter_id=datacenter_id,
                 rsa_key=ssh_key,
-                private_network_id=private_network_id))
+                private_network_id=private_network_id), hdds)
 
         if wait:
             _wait_for_machine_creation_completion(
@@ -328,6 +353,10 @@ def create_machine(module, oneandone_conn):
     auto_increment = module.params.get('auto_increment')
     count = module.params.get('count')
     fixed_instance_size = module.params.get('fixed_instance_size')
+    vcore = module.params.get('vcore')
+    cores_per_processor = module.params.get('cores_per_processor')
+    ram = module.params.get('ram')
+    hdds = module.params.get('hdds')
     datacenter = module.params.get('datacenter')
     appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
@@ -341,12 +370,14 @@ def create_machine(module, oneandone_conn):
         module.fail_json(
             msg='datacenter %s not found.' % datacenter)
 
-    fixed_instance_size_id = _find_fixed_instance_size(
-        oneandone_conn,
-        fixed_instance_size)
-    if fixed_instance_size_id is None:
-        module.fail_json(
-            msg='fixed_instance_size %s note found.' % fixed_instance_size)
+    fixed_instance_size_id = None
+    if fixed_instance_size:
+        fixed_instance_size_id = _find_fixed_instance_size(
+            oneandone_conn,
+            fixed_instance_size)
+        if fixed_instance_size_id is None:
+            module.fail_json(
+                msg='fixed_instance_size %s not found.' % fixed_instance_size)
 
     appliance_id = _find_appliance(oneandone_conn, appliance)
     if appliance_id is None:
@@ -368,6 +399,14 @@ def create_machine(module, oneandone_conn):
         hostnames = [hostname] * count
         descriptions = [description] * count
 
+    hdd_objs = []
+    if hdds:
+        for hdd in hdds:
+            hdd_objs.append(oneandone.client.Hdd(
+                size=hdd['size'],
+                is_main=hdd['is_main']
+            ))
+
     machines = []
     for index, name in enumerate(hostnames):
         machines.append(
@@ -377,6 +416,10 @@ def create_machine(module, oneandone_conn):
                 hostname=name,
                 description=descriptions[index],
                 fixed_instance_size_id=fixed_instance_size_id,
+                vcore=vcore,
+                cores_per_processor=cores_per_processor,
+                ram=ram,
+                hdds=hdd_objs,
                 datacenter_id=datacenter_id,
                 appliance_id=appliance_id,
                 ssh_key=ssh_key,
@@ -384,10 +427,10 @@ def create_machine(module, oneandone_conn):
                 wait=wait,
                 wait_timeout=wait_timeout))
 
-    return {
-        'changed': True if machines else False,
-        'machines': [_insert_network_data(machine) for machine in machines],
-    }
+    changed = True if machines else False
+    machines = [_insert_network_data(machine) for machine in machines]
+
+    return (changed, machines)
 
 
 def remove_machine(module, oneandone_conn):
@@ -420,13 +463,13 @@ def remove_machine(module, oneandone_conn):
             module.fail_json(
                 msg="failed to terminate the machine: %s" % str(e))
 
-    return {
-        'changed': True if removed_machines else False,
-        'machines': [{
-            'id': machine['id'],
-            'hostname': machine['name'],
-        } for machine in removed_machines]
-    }
+    changed = True if removed_machines else False
+    machines = [{
+        'id': machine['id'],
+        'hostname': machine['name'],
+    } for machine in removed_machines]
+
+    return (changed, machines)
 
 
 def startstop_machine(module, oneandone_conn):
@@ -506,10 +549,9 @@ def startstop_machine(module, oneandone_conn):
         changed = True
         machines.append(machine)
 
-    return {
-        'changed': changed,
-        'machines': [_insert_network_data(machine) for machine in machines]
-    }
+    machines = [_insert_network_data(machine) for machine in machines]
+
+    return (changed, machines)
 
 
 def _auto_increment_hostname(count, hostname):
@@ -541,6 +583,23 @@ def _auto_increment_description(count, description):
         return [description] * count
 
 
+def _validate_custom_hardware_params(module):
+    for param in ('vcore',
+                  'cores_per_processor',
+                  'ram',
+                  'hdds'):
+        if not module.params.get(param):
+            return False
+    return True
+
+
+def _validate_hardware_params(module):
+    if (bool(module.params.get('fixed_instance_size')) ^
+       bool(_validate_custom_hardware_params(module))):
+        return True
+    return False
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -551,6 +610,10 @@ def main():
             description=dict(type='str'),
             appliance=dict(type='str'),
             fixed_instance_size=dict(type='str'),
+            vcore=dict(type='int'),
+            cores_per_processor=dict(type='int'),
+            ram=dict(type='float'),
+            hdds=dict(type='list'),
             count=dict(type='int', default=1),
             ssh_key=dict(type='raw', default=None),
             auto_increment=dict(type='bool', default=True),
@@ -580,28 +643,35 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_machine(module, oneandone_conn))
+            (changed, machines) = remove_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state in ('running', 'stopped'):
         try:
-            module.exit_json(**startstop_machine(module, oneandone_conn))
+            (changed, machines) = startstop_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state == 'present':
+        if not _validate_hardware_params(module):
+            module.fail_json(
+                msg="Either 'fixed_size_instance' or custom hardware specs "
+                    "'vcore', 'cores_per_processor', 'ram', and 'hdds'"
+                    " must be provided (mutually exclusive).")
+
         for param in ('hostname',
                       'appliance',
-                      'fixed_instance_size',
                       'datacenter'):
             if not module.params.get(param):
                 module.fail_json(
                     msg="%s parameter is required for new instance." % param)
         try:
-            module.exit_json(**create_machine(module, oneandone_conn))
+            (changed, machines) = create_machine(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, machines=machines)
 
 
 from ansible.module_utils.basic import *
