@@ -279,8 +279,8 @@ def _wait_for_machine_creation_completion(oneandone_conn,
 
 
 def _create_machine(module, oneandone_conn, hostname, description,
-                    fixed_instance_size_id, datacenter_id, appliance_id,
-                    ssh_key, private_network_id, wait, wait_timeout):
+                    fixed_instance_size_id, vcore, cores_per_processor, ram, hdds,
+                    datacenter_id, appliance_id, ssh_key, private_network_id, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
@@ -288,10 +288,13 @@ def _create_machine(module, oneandone_conn, hostname, description,
                 name=hostname,
                 description=description,
                 fixed_instance_size_id=fixed_instance_size_id,
+                vcore=vcore,
+                cores_per_processor=cores_per_processor,
+                ram=ram,
                 appliance_id=appliance_id,
                 datacenter_id=datacenter_id,
                 rsa_key=ssh_key,
-                private_network_id=private_network_id))
+                private_network_id=private_network_id), hdds)
 
         if wait:
             _wait_for_machine_creation_completion(
@@ -328,6 +331,10 @@ def create_machine(module, oneandone_conn):
     auto_increment = module.params.get('auto_increment')
     count = module.params.get('count')
     fixed_instance_size = module.params.get('fixed_instance_size')
+    vcore = module.params.get('datacenter')
+    cores_per_processor = module.params.get('datacenter')
+    ram = module.params.get('datacenter')
+    hdds = module.params.get('datacenter')
     datacenter = module.params.get('datacenter')
     appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
@@ -341,12 +348,13 @@ def create_machine(module, oneandone_conn):
         module.fail_json(
             msg='datacenter %s not found.' % datacenter)
 
-    fixed_instance_size_id = _find_fixed_instance_size(
-        oneandone_conn,
-        fixed_instance_size)
-    if fixed_instance_size_id is None:
-        module.fail_json(
-            msg='fixed_instance_size %s note found.' % fixed_instance_size)
+    if fixed_instance_size:
+        fixed_instance_size_id = _find_fixed_instance_size(
+            oneandone_conn,
+            fixed_instance_size)
+        if fixed_instance_size_id is None:
+            module.fail_json(
+                msg='fixed_instance_size %s not found.' % fixed_instance_size)
 
     appliance_id = _find_appliance(oneandone_conn, appliance)
     if appliance_id is None:
@@ -377,6 +385,10 @@ def create_machine(module, oneandone_conn):
                 hostname=name,
                 description=descriptions[index],
                 fixed_instance_size_id=fixed_instance_size_id,
+                vcore=vcore,
+                cores_per_processor=cores_per_processor,
+                ram=ram,
+                hdds=hdds,
                 datacenter_id=datacenter_id,
                 appliance_id=appliance_id,
                 ssh_key=ssh_key,
@@ -540,6 +552,22 @@ def _auto_increment_description(count, description):
         return [description] * count
 
 
+def _validate_custom_hardware_params(module):
+    for param in ('vcore',
+                  'cores_per_processor',
+                  'ram',
+                  'hdds'):
+        if not module.params.get(param):
+            return False
+    return True
+
+
+def _validate_hardware_params(module):
+    if bool(module.params.get('fixed_instance_size')) ^ bool(_validate_custom_hardware_params(module)):
+        return True
+    return False
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -550,6 +578,10 @@ def main():
             description=dict(type='str'),
             appliance=dict(type='str'),
             fixed_instance_size=dict(type='str'),
+            vcore=dict(type='int'),
+            cores_per_processor=dict(type='int'),
+            ram=dict(type='float'),
+            hdds=dict(type='list'),
             count=dict(type='int', default=1),
             ssh_key=dict(type='raw', default=None),
             auto_increment=dict(type='bool', default=True),
@@ -590,9 +622,11 @@ def main():
             module.fail_json(msg=str(e))
 
     elif state == 'present':
+        if not _validate_hardware_params(module):
+            module.fail_json("Either fixed_size_instance parameter or full custom hardware specification parameters"
+                             " must be provided (mutually exclusive).")
         for param in ('hostname',
                       'appliance',
-                      'fixed_instance_size',
                       'datacenter'):
             if not module.params.get(param):
                 module.fail_json(
