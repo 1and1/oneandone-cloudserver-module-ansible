@@ -348,6 +348,7 @@ def create_machine(module, oneandone_conn):
         module.fail_json(
             msg='datacenter %s not found.' % datacenter)
 
+    fixed_instance_size_id = None
     if fixed_instance_size:
         fixed_instance_size_id = _find_fixed_instance_size(
             oneandone_conn,
