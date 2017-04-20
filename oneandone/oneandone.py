@@ -377,6 +377,14 @@ def create_machine(module, oneandone_conn):
         hostnames = [hostname] * count
         descriptions = [description] * count
 
+    hdd_objs = []
+    if hdds:
+        for hdd in hdds:
+            hdd_objs.append(oneandone.client.Hdd(
+                size=hdd['size'],
+                is_main=hdd['is_main']
+            ))
+
     machines = []
     for index, name in enumerate(hostnames):
         machines.append(
@@ -389,7 +397,7 @@ def create_machine(module, oneandone_conn):
                 vcore=vcore,
                 cores_per_processor=cores_per_processor,
                 ram=ram,
-                hdds=hdds,
+                hdds=hdd_objs,
                 datacenter_id=datacenter_id,
                 appliance_id=appliance_id,
                 ssh_key=ssh_key,
