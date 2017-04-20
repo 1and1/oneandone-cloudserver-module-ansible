@@ -623,7 +623,7 @@ def main():
 
     elif state == 'present':
         if not _validate_hardware_params(module):
-            module.fail_json("Either fixed_size_instance parameter or full custom hardware specification parameters"
+            module.fail_json(msg="Either fixed_size_instance parameter or full custom hardware specification parameters"
                              " must be provided (mutually exclusive).")
         for param in ('hostname',
                       'appliance',
