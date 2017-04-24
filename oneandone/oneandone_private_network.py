@@ -168,8 +168,7 @@ def _wait_for_network_creation_completion(oneandone_conn,
         elif network['state'].lower() == 'failed':
             raise Exception('Private network creation ' +
                             ' failed for %s' % network['id'])
-        elif network['state'].lower() in ('active',
-                                          'enabled',
+        elif network['state'].lower() in ('enabled',
                                           'deploying',
                                           'configuring'):
             continue
@@ -231,34 +230,37 @@ def addremove_member(module, oneandone_conn):
     Returns a dictionary containing a 'changed' attribute indicating whether
     any member was added.
     """
-    name = module.params.get('name')
-    add_members = module.params.get('add_members')
-    remove_members = module.params.get('remove_members')
-    private_network = _find_private_network(oneandone_conn, name)
-    network = None
-
-    if add_members:
-        instances = []
-
-        for member in add_members:
-            instance = _find_machine(oneandone_conn, member)
-            instance_obj = oneandone.client.AttachServer(server_id=instance['id'])
-
-            instances.extend([instance_obj])
-
-        network = _add_member(module, oneandone_conn, private_network['id'], instances)
-
-    if remove_members:
-        for member in remove_members:
-            instance = _find_machine(oneandone_conn, member)
-            _remove_member(module,
-                           oneandone_conn,
-                           private_network['id'],
-                           instance['id'])
-        network = _find_private_network(oneandone_conn, name)
-
     try:
-        return network
+        name = module.params.get('name')
+        add_members = module.params.get('add_members')
+        remove_members = module.params.get('remove_members')
+        private_network = _find_private_network(oneandone_conn, name)
+        network = None
+
+        changed = False
+
+        if add_members:
+            instances = []
+
+            for member in add_members:
+                instance = _find_machine(oneandone_conn, member)
+                instance_obj = oneandone.client.AttachServer(server_id=instance['id'])
+
+                instances.extend([instance_obj])
+            network = _add_member(module, oneandone_conn, private_network['id'], instances)
+            changed = True if network else False
+
+        if remove_members:
+            for member in remove_members:
+                instance = _find_machine(oneandone_conn, member)
+                _remove_member(module,
+                               oneandone_conn,
+                               private_network['id'],
+                               instance['id'])
+            network = _find_private_network(oneandone_conn, name)
+            changed = True if network else False
+
+        return (changed, network)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -305,7 +307,9 @@ def create_network(module, oneandone_conn):
             network = _find_private_network(oneandone_conn,
                                             network['id'])
 
-        return network
+        changed = True if network else False
+
+        return (changed, network)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -331,7 +335,9 @@ def update_network(module, oneandone_conn):
             network_address=_network_address,
             subnet_mask=_subnet_mask)
 
-        return network
+        changed = True if network else False
+
+        return (changed, network)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -348,7 +354,12 @@ def remove_network(module, oneandone_conn):
         private_network = _find_private_network(oneandone_conn, name)
         private_network = oneandone_conn.delete_private_network(private_network['id'])
 
-        return private_network
+        changed = True if private_network else False
+
+        return (changed, {
+            'id': private_network['id'],
+            'name': private_network['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -389,17 +400,17 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_network(module, oneandone_conn))
+            (changed, private_network) = remove_network(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_network(module, oneandone_conn))
+            (changed, private_network) = update_network(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'add_remove_member':
         try:
-            module.exit_json(**addremove_member(module, oneandone_conn))
+            (changed, private_network) = addremove_member(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -409,9 +420,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for new networks." % param)
         try:
-            module.exit_json(**create_network(module, oneandone_conn))
+            (changed, private_network) = create_network(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, private_network=private_network)
 
 
 from ansible.module_utils.basic import *

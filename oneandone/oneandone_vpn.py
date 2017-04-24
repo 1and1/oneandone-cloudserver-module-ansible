@@ -121,9 +121,11 @@ def update_vpn(module, oneandone_conn):
     vpn = _find_vpn(oneandone_conn, _vpn)
 
     try:
-        vpn = oneandone_conn.modify_vpn(vpn['id'], name=_name, description=_description)
+        updated_vpn = oneandone_conn.modify_vpn(vpn['id'], name=_name, description=_description)
 
-        return vpn
+        changed = True if updated_vpn else False
+
+        return (changed, updated_vpn)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -160,7 +162,9 @@ def create_vpn(module, oneandone_conn):
                 vpn,
                 wait_timeout)
 
-        return vpn
+        changed = True if vpn else False
+
+        return (changed, vpn)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -177,7 +181,12 @@ def remove_vpn(module, oneandone_conn):
         vpn = _find_vpn(oneandone_conn, _vpn)
         vpn = oneandone_conn.delete_vpn(vpn['id'])
 
-        return vpn
+        changed = True if vpn else False
+
+        return (changed, {
+            'id': vpn['id'],
+            'name': vpn['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -214,12 +223,12 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_vpn(module, oneandone_conn))
+            (changed, vpn) = remove_vpn(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_vpn(module, oneandone_conn))
+            (changed, vpn) = update_vpn(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -228,9 +237,11 @@ def main():
             module.fail_json(
                 msg="name parameter is required for a new VPN.")
         try:
-            module.exit_json(**create_vpn(module, oneandone_conn))
+            (changed, vpn) = create_vpn(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, vpn=vpn)
 
 
 from ansible.module_utils.basic import *

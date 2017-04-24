@@ -152,14 +152,16 @@ def create_public_ip(module, oneandone_conn):
         public_ip = oneandone_conn.create_public_ip(
             reverse_dns=reverse_dns,
             ip_type=type,
-            datacenter_id=datacenter['id'])
+            datacenter_id=datacenter_id)
 
         if wait:
             _wait_for_public_ip_creation_completion(
                 oneandone_conn, public_ip, wait_timeout)
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])  # refresh
 
-        return public_ip
+        changed = True if public_ip else False
+
+        return (changed, public_ip)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -178,6 +180,8 @@ def update_public_ip(module, oneandone_conn):
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
+    changed = False
+
     public_ip = oneandone_conn.get_public_ip(oneandone_conn, public_ip_id)
     if public_ip is None:
         module.fail_json(
@@ -188,12 +192,14 @@ def update_public_ip(module, oneandone_conn):
             ip_id=public_ip_id,
             reverse_dns=reverse_dns)
 
+        changed = True
+
         if wait:
             _wait_for_public_ip_creation_completion(
                 oneandone_conn, public_ip, wait_timeout)
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])  # refresh
 
-        return public_ip
+        return (changed, public_ip)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -218,7 +224,11 @@ def delete_public_ip(module, oneandone_conn):
         public_ip = oneandone_conn.delete_public_ip(
             ip_id=public_ip_id)
 
-        return public_ip
+        changed = True if public_ip else False
+
+        return (changed, {
+            'id': public_ip['id']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -257,20 +267,22 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**delete_public_ip(module, oneandone_conn))
+            (changed, public_ip) = delete_public_ip(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_public_ip(module, oneandone_conn))
+            (changed, public_ip) = update_public_ip(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state in ('present'):
         try:
-            module.exit_json(**create_public_ip(module, oneandone_conn))
+            (changed, public_ip) = create_public_ip(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, public_ip=public_ip)
 
 
 from ansible.module_utils.basic import *

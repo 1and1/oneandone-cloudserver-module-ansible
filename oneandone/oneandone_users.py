@@ -178,6 +178,8 @@ def update_user(module, oneandone_conn):
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
+    changed = False
+
     user = _find_user(oneandone_conn, user_id)
 
     try:
@@ -188,35 +190,40 @@ def update_user(module, oneandone_conn):
                 email=_email,
                 password=_password,
                 state=_state)
+            changed = True
 
         if _user_ips:
             user = _add_user_ip(module=module,
                                 oneandone_conn=oneandone_conn,
                                 user_id=user['id'],
                                 user_ips=_user_ips)
+            changed = True
 
         if _ip:
             user = _remove_user_ip(module=module,
                                    oneandone_conn=oneandone_conn,
                                    user_id=user['id'],
                                    ip=_ip)
+            changed = True
 
         if _active:
             user = _modify_user_api(module=module,
                                     oneandone_conn=oneandone_conn,
                                     user_id=user['id'],
                                     active=_active)
+            changed = True
 
         if _key and _key==True:
             user = _change_api_key(module=module,
                                    oneandone_conn=oneandone_conn,
                                    user_id=user['id'])
+            changed = True
 
         if wait:
             _wait_for_user_creation_completion(
                 oneandone_conn, user, wait_timeout)
 
-        return user
+        return (changed, user)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -246,7 +253,9 @@ def create_user(module, oneandone_conn):
             _wait_for_user_creation_completion(
                 oneandone_conn, user, wait_timeout)
 
-        return user
+        changed = True if user else False
+
+        return (changed, user)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -264,7 +273,12 @@ def remove_user(module, oneandone_conn):
     try:
         user = oneandone_conn.delete_user(_user['id'])
 
-        return user
+        changed = True if user else False
+
+        return (changed, {
+            'id': user['id'],
+            'name': user['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -307,12 +321,12 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_user(module, oneandone_conn))
+            (changed, user) = remove_user(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_user(module, oneandone_conn))
+            (changed, user) = update_user(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -322,9 +336,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for new users." % param)
         try:
-            module.exit_json(**create_user(module, oneandone_conn))
+            (changed, user) = create_user(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, user=user)
 
 
 from ansible.module_utils.basic import *
