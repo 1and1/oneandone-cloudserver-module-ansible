@@ -455,94 +455,100 @@ def update_monitoring_policy(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    name = module.params.get('name')
-    description = module.params.get('description')
-    email = module.params.get('email')
-    thresholds = module.params.get('thresholds')
-    add_ports = module.params.get('add_ports')
-    update_ports = module.params.get('update_ports')
-    remove_ports = module.params.get('remove_ports')
-    add_processes = module.params.get('add_processes')
-    update_processes = module.params.get('update_processes')
-    remove_processes = module.params.get('remove_processes')
-    add_servers = module.params.get('add_servers')
-    remove_servers = module.params.get('remove_servers')
-
-    monitoring_policy = _find_monitoring_policy(oneandone_conn, name)
-
-    _monitoring_policy = oneandone.client.MonitoringPolicy(
-        name=name,
-        description=description,
-        email=email
-    )
-
-    if name or description or email or thresholds:
-        monitoring_policy = oneandone_conn.modify_monitoring_policy(
-            monitoring_policy_id=monitoring_policy['id'],
-            monitoring_policy=_monitoring_policy,
-            thresholds=thresholds)
-
-    if add_ports:
-        monitoring_policy = _add_ports(module, oneandone_conn, monitoring_policy['id'], add_ports)
-
-    if update_ports:
-        for update_port in update_ports:
-            _modify_port(module,
-                         oneandone_conn,
-                         monitoring_policy['id'],
-                         update_port['id'],
-                         update_port)
-
-        monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
-
-    if remove_ports:
-        for port_id in remove_ports:
-            _delete_monitoring_policy_port(module,
-                                           oneandone_conn,
-                                           monitoring_policy['id'],
-                                           port_id)
-
-        monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
-
-    if add_processes:
-        monitoring_policy = _add_processes(module, oneandone_conn, monitoring_policy['id'], add_processes)
-
-    if update_processes:
-        for update_process in update_processes:
-            _modify_process(module,
-                            oneandone_conn,
-                            monitoring_policy['id'],
-                            update_process['id'],
-                            update_process)
-
-        monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
-
-    if remove_processes:
-        for process_id in remove_processes:
-            _delete_monitoring_policy_process(module,
-                                              oneandone_conn,
-                                              monitoring_policy['id'],
-                                              process_id)
-
-        monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
-
-    if add_servers:
-        monitoring_policy = _attach_monitoring_policy_server(module,
-                                                             oneandone_conn,
-                                                             monitoring_policy['id'],
-                                                             add_servers)
-
-    if remove_servers:
-        for server_id in remove_servers:
-            _detach_monitoring_policy_server(module,
-                                             oneandone_conn,
-                                             monitoring_policy['id'],
-                                             server_id)
-
-        monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
-
     try:
-        return monitoring_policy
+        name = module.params.get('name')
+        description = module.params.get('description')
+        email = module.params.get('email')
+        thresholds = module.params.get('thresholds')
+        add_ports = module.params.get('add_ports')
+        update_ports = module.params.get('update_ports')
+        remove_ports = module.params.get('remove_ports')
+        add_processes = module.params.get('add_processes')
+        update_processes = module.params.get('update_processes')
+        remove_processes = module.params.get('remove_processes')
+        add_servers = module.params.get('add_servers')
+        remove_servers = module.params.get('remove_servers')
+
+        changed = False
+
+        monitoring_policy = _find_monitoring_policy(oneandone_conn, name)
+
+        _monitoring_policy = oneandone.client.MonitoringPolicy(
+            name=name,
+            description=description,
+            email=email
+        )
+
+        if name or description or email or thresholds:
+            monitoring_policy = oneandone_conn.modify_monitoring_policy(
+                monitoring_policy_id=monitoring_policy['id'],
+                monitoring_policy=_monitoring_policy,
+                thresholds=thresholds)
+            changed = True
+
+        if add_ports:
+            monitoring_policy = _add_ports(module, oneandone_conn, monitoring_policy['id'], add_ports)
+            changed = True
+
+        if update_ports:
+            for update_port in update_ports:
+                _modify_port(module,
+                             oneandone_conn,
+                             monitoring_policy['id'],
+                             update_port['id'],
+                             update_port)
+            monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
+            changed = True
+
+        if remove_ports:
+            for port_id in remove_ports:
+                _delete_monitoring_policy_port(module,
+                                               oneandone_conn,
+                                               monitoring_policy['id'],
+                                               port_id)
+            monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
+            changed = True
+
+        if add_processes:
+            monitoring_policy = _add_processes(module, oneandone_conn, monitoring_policy['id'], add_processes)
+            changed = True
+
+        if update_processes:
+            for update_process in update_processes:
+                _modify_process(module,
+                                oneandone_conn,
+                                monitoring_policy['id'],
+                                update_process['id'],
+                                update_process)
+            monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
+            changed = True
+
+        if remove_processes:
+            for process_id in remove_processes:
+                _delete_monitoring_policy_process(module,
+                                                  oneandone_conn,
+                                                  monitoring_policy['id'],
+                                                  process_id)
+            monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
+            changed = True
+
+        if add_servers:
+            monitoring_policy = _attach_monitoring_policy_server(module,
+                                                                 oneandone_conn,
+                                                                 monitoring_policy['id'],
+                                                                 add_servers)
+            changed = True
+
+        if remove_servers:
+            for server_id in remove_servers:
+                _detach_monitoring_policy_server(module,
+                                                 oneandone_conn,
+                                                 monitoring_policy['id'],
+                                                 server_id)
+            monitoring_policy = _find_monitoring_policy(oneandone_conn, monitoring_policy['id'])
+            changed = True
+
+        return (changed, monitoring_policy)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -616,7 +622,9 @@ def create_monitoring_policy(module, oneandone_conn):
                 monitoring_policy,
                 wait_timeout)
 
-        return monitoring_policy
+        changed = True if monitoring_policy else False
+
+        return (changed, monitoring_policy)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -633,7 +641,12 @@ def remove_monitoring_policy(module, oneandone_conn):
         monitoring_policy = _find_monitoring_policy(oneandone_conn, name)
         monitoring_policy = oneandone_conn.delete_monitoring_policy(monitoring_policy['id'])
 
-        return monitoring_policy
+        changed = True if monitoring_policy else False
+
+        return (changed, {
+            'id': monitoring_policy['id'],
+            'name': monitoring_policy['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -681,12 +694,12 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_monitoring_policy(module, oneandone_conn))
+            (changed, monitoring_policy) = remove_monitoring_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_monitoring_policy(module, oneandone_conn))
+            (changed, monitoring_policy) = update_monitoring_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -696,9 +709,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for a new monitoring policy." % param)
         try:
-            module.exit_json(**create_monitoring_policy(module, oneandone_conn))
+            (changed, monitoring_policy) = create_monitoring_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, monitoring_policy=monitoring_policy)
 
 
 from ansible.module_utils.basic import *

@@ -278,6 +278,8 @@ def update_load_balancer(module, oneandone_conn):
     add_rules = module.params.get('add_rules')
     remove_rules = module.params.get('remove_rules')
 
+    changed = False
+
     load_balancer = _find_load_balancer(oneandone_conn, name)
 
     if (name or description or health_check_test or health_check_interval or health_check_path
@@ -293,9 +295,11 @@ def update_load_balancer(module, oneandone_conn):
             persistence=persistence,
             persistence_time=persistence_time,
             method=method)
+        changed = True
 
     if add_server_ips:
         load_balancer = _add_server_ips(module, oneandone_conn, load_balancer['id'], add_server_ips)
+        changed = True
 
     if remove_server_ips:
         for server_ip_id in remove_server_ips:
@@ -304,12 +308,14 @@ def update_load_balancer(module, oneandone_conn):
                                          load_balancer['id'],
                                          server_ip_id)
             load_balancer = _find_load_balancer(oneandone_conn, load_balancer['id'])
+        changed = True
 
     if add_rules:
         load_balancer = _add_load_balancer_rules(module,
                                                  oneandone_conn,
                                                  load_balancer['id'],
                                                  add_rules)
+        changed = True
 
     if remove_rules:
         for rule_id in remove_rules:
@@ -318,9 +324,10 @@ def update_load_balancer(module, oneandone_conn):
                                        load_balancer['id'],
                                        rule_id)
             load_balancer = _find_load_balancer(oneandone_conn, load_balancer['id'])
+        changed = True
 
     try:
-        return load_balancer
+        return (changed, load_balancer)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -385,7 +392,9 @@ def create_load_balancer(module, oneandone_conn):
             _wait_for_load_balancer_creation_completion(
                 oneandone_conn, load_balancer, wait_timeout)
 
-        return load_balancer
+        changed = True if load_balancer else False
+
+        return (changed, load_balancer)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -402,7 +411,12 @@ def remove_load_balancer(module, oneandone_conn):
         load_balancer = _find_load_balancer(oneandone_conn, name)
         load_balancer = oneandone_conn.delete_load_balancer(load_balancer['id'])
 
-        return load_balancer
+        changed = True if load_balancer else False
+
+        return (changed, {
+            'id': load_balancer['id'],
+            'name': load_balancer['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -453,12 +467,12 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_load_balancer(module, oneandone_conn))
+            (changed, load_balancer) = remove_load_balancer(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_load_balancer(module, oneandone_conn))
+            (changed, load_balancer) = update_load_balancer(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -468,9 +482,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for new networks." % param)
         try:
-            module.exit_json(**create_load_balancer(module, oneandone_conn))
+            (changed, load_balancer) = create_load_balancer(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, load_balancer=load_balancer)
 
 
 from ansible.module_utils.basic import *

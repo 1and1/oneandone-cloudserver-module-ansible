@@ -194,6 +194,8 @@ def update_role(module, oneandone_conn):
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
+    changed = False
+
     role = _find_role(oneandone_conn, role_id)
 
     try:
@@ -203,6 +205,7 @@ def update_role(module, oneandone_conn):
                 name=_name,
                 description=_description,
                 state=_state)
+            changed = True
 
         if should_update_permissions(_servers, _images, _shared_storages, _firewalls,
                                      _load_balancers, _ips, _private_networks, _vpns,
@@ -227,30 +230,34 @@ def update_role(module, oneandone_conn):
                                             roles=_roles,
                                             usages=_usages,
                                             interactive_invoices=_interactive_invoices)
+            changed = True
 
         if _add_users:
             role = _add_users_to_role(module=module,
                                       oneandone_conn=oneandone_conn,
                                       role_id=role['id'],
                                       users=_add_users)
+            changed = True
 
         if _remove_users:
             role = _remove_users_from_role(module=module,
                                            oneandone_conn=oneandone_conn,
                                            role_id=role['id'],
                                            users=_remove_users)
+            changed = True
 
         if _role_clone_name:
             role = _clone_role(module=module,
                                oneandone_conn=oneandone_conn,
                                role_id=role['id'],
                                name=_role_clone_name)
+            changed = True
 
         if wait:
             _wait_for_role_creation_completion(
                 oneandone_conn, role, wait_timeout)
 
-        return role
+        return (changed, role)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -289,7 +296,9 @@ def create_role(module, oneandone_conn):
             _wait_for_role_creation_completion(
                 oneandone_conn, role, wait_timeout)
 
-        return role
+        changed = True if role else False
+
+        return (changed, role)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -307,7 +316,12 @@ def remove_role(module, oneandone_conn):
     try:
         role = oneandone_conn.delete_role(_role['id'])
 
-        return role
+        changed = True if role else False
+
+        return (changed, {
+            'id': role['id'],
+            'name': role['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -364,24 +378,25 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_role(module, oneandone_conn))
+            (changed, role) = remove_role(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_role(module, oneandone_conn))
+            (changed, role) = update_role(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state == 'present':
-        for param in ('name', 'password'):
-            if not module.params.get(param):
-                module.fail_json(
-                    msg="%s parameter is required for new roles." % param)
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required for new roles.")
         try:
-            module.exit_json(**create_role(module, oneandone_conn))
+            (changed, role) = create_role(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, role=role)
 
 
 from ansible.module_utils.basic import *

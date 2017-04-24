@@ -252,48 +252,55 @@ def update_firewall_policy(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    name = module.params.get('name')
-    description = module.params.get('description')
-    add_server_ips = module.params.get('add_server_ips')
-    remove_server_ips = module.params.get('remove_server_ips')
-    add_rules = module.params.get('add_rules')
-    remove_rules = module.params.get('remove_rules')
-
-    firewall_policy = _find_firewall_policy(oneandone_conn, name)
-
-    if name or description:
-        firewall_policy = oneandone_conn.modify_firewall(
-            firewall_id=firewall_policy['id'],
-            name=name,
-            description=description)
-
-    if add_server_ips:
-        firewall_policy = _add_server_ips(module, oneandone_conn, firewall_policy['id'], add_server_ips)
-
-    if remove_server_ips:
-        for server_ip_id in remove_server_ips:
-            _remove_firewall_server(module,
-                                    oneandone_conn,
-                                    firewall_policy['id'],
-                                    server_ip_id)
-            firewall_policy = _find_firewall_policy(oneandone_conn, firewall_policy['id'])
-
-    if add_rules:
-        firewall_policy = _add_firewall_rules(module,
-                                              oneandone_conn,
-                                              firewall_policy['id'],
-                                              add_rules)
-
-    if remove_rules:
-        for rule_id in remove_rules:
-            _remove_firewall_rule(module,
-                                  oneandone_conn,
-                                  firewall_policy['id'],
-                                  rule_id)
-            firewall_policy = _find_firewall_policy(oneandone_conn, firewall_policy['id'])
-
     try:
-        return firewall_policy
+        name = module.params.get('name')
+        description = module.params.get('description')
+        add_server_ips = module.params.get('add_server_ips')
+        remove_server_ips = module.params.get('remove_server_ips')
+        add_rules = module.params.get('add_rules')
+        remove_rules = module.params.get('remove_rules')
+
+        changed = False
+
+        firewall_policy = _find_firewall_policy(oneandone_conn, name)
+
+        if name or description:
+            firewall_policy = oneandone_conn.modify_firewall(
+                firewall_id=firewall_policy['id'],
+                name=name,
+                description=description)
+            changed = True
+
+        if add_server_ips:
+            firewall_policy = _add_server_ips(module, oneandone_conn, firewall_policy['id'], add_server_ips)
+            changed = True
+
+        if remove_server_ips:
+            for server_ip_id in remove_server_ips:
+                _remove_firewall_server(module,
+                                        oneandone_conn,
+                                        firewall_policy['id'],
+                                        server_ip_id)
+                firewall_policy = _find_firewall_policy(oneandone_conn, firewall_policy['id'])
+            changed = True
+
+        if add_rules:
+            firewall_policy = _add_firewall_rules(module,
+                                                  oneandone_conn,
+                                                  firewall_policy['id'],
+                                                  add_rules)
+            changed = True
+
+        if remove_rules:
+            for rule_id in remove_rules:
+                _remove_firewall_rule(module,
+                                      oneandone_conn,
+                                      firewall_policy['id'],
+                                      rule_id)
+                firewall_policy = _find_firewall_policy(oneandone_conn, firewall_policy['id'])
+            changed = True
+
+        return (changed, firewall_policy)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -336,7 +343,9 @@ def create_firewall_policy(module, oneandone_conn):
             _wait_for_firewall_policy_creation_completion(
                 oneandone_conn, firewall_policy, wait_timeout)
 
-        return firewall_policy
+        changed = True if firewall_policy else False
+
+        return (changed, firewall_policy)
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -353,7 +362,12 @@ def remove_firewall_policy(module, oneandone_conn):
         firewall_policy = _find_firewall_policy(oneandone_conn, name)
         firewall_policy = oneandone_conn.delete_firewall(firewall_policy['id'])
 
-        return firewall_policy
+        changed = True if firewall_policy else False
+
+        return (changed, {
+            'id': firewall_policy['id'],
+            'name': firewall_policy['name']
+        })
     except Exception as e:
         module.fail_json(msg=str(e))
 
@@ -393,12 +407,12 @@ def main():
 
     if state == 'absent':
         try:
-            module.exit_json(**remove_firewall_policy(module, oneandone_conn))
+            (changed, firewall_policy) = remove_firewall_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
         try:
-            module.exit_json(**update_firewall_policy(module, oneandone_conn))
+            (changed, firewall_policy) = update_firewall_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
@@ -408,9 +422,11 @@ def main():
                 module.fail_json(
                     msg="%s parameter is required for new networks." % param)
         try:
-            module.exit_json(**create_firewall_policy(module, oneandone_conn))
+            (changed, firewall_policy) = create_firewall_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
+
+    module.exit_json(changed=changed, firewall_policy=firewall_policy)
 
 
 from ansible.module_utils.basic import *
