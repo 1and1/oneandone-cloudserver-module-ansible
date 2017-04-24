@@ -168,8 +168,7 @@ def _wait_for_network_creation_completion(oneandone_conn,
         elif network['state'].lower() == 'failed':
             raise Exception('Private network creation ' +
                             ' failed for %s' % network['id'])
-        elif network['state'].lower() in ('active',
-                                          'enabled',
+        elif network['state'].lower() in ('enabled',
                                           'deploying',
                                           'configuring'):
             continue
