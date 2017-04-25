@@ -51,8 +51,14 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
+
+import os
+import time
 
 HAS_ONEANDONE_SDK = True
 
@@ -60,6 +66,7 @@ try:
     import oneandone.client
 except ImportError:
     HAS_ONEANDONE_SDK = False
+
 
 def _wait_for_vpn_creation_completion(oneandone_conn, vpn, wait_timeout):
     wait_timeout = time.time() + wait_timeout
@@ -121,7 +128,9 @@ def update_vpn(module, oneandone_conn):
     vpn = _find_vpn(oneandone_conn, _vpn)
 
     try:
-        updated_vpn = oneandone_conn.modify_vpn(vpn['id'], name=_name, description=_description)
+        updated_vpn = oneandone_conn.modify_vpn(vpn['id'],
+                                                name=_name,
+                                                description=_description)
 
         changed = True if updated_vpn else False
 
@@ -244,6 +253,6 @@ def main():
     module.exit_json(changed=changed, vpn=vpn)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

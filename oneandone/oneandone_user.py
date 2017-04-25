@@ -22,7 +22,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: oneandone_users
+module: oneandone_user
 short_description: Configure 1&1 users.
 description:
      - Create, remove, update a user
@@ -46,8 +46,8 @@ options:
     required: true
   password:
     description:
-      - User's password. Pass must contain at least 8 characters using uppercase letters, numbers,
-        and other special symbols.
+      - User's password. Pass must contain at least 8 characters using
+        uppercase letters, numbers, and other special symbols.
   description:
     description:
       - User description.
@@ -58,8 +58,14 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
+
+import os
+import time
 
 HAS_ONEANDONE_SDK = True
 
@@ -213,7 +219,7 @@ def update_user(module, oneandone_conn):
                                     active=_active)
             changed = True
 
-        if _key and _key==True:
+        if _key and _key is True:
             user = _change_api_key(module=module,
                                    oneandone_conn=oneandone_conn,
                                    user_id=user['id'])
@@ -343,6 +349,6 @@ def main():
     module.exit_json(changed=changed, user=user)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

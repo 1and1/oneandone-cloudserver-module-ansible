@@ -5,10 +5,10 @@
 
   tasks:
     - name: Create a user
-      oneandone_users:
+      oneandone_user:
         name: ansible_user
-        description: Create a user with ansible - test
+        description: Create a user with ansible
         password: Ansib1e_pa$$word
-        email: amel@stackpointcloud.com
+        email: user@example.com
         wait: true
         wait_timeout: 500

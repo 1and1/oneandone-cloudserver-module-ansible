@@ -249,8 +249,14 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
+
+import os
+import time
 
 HAS_ONEANDONE_SDK = True
 
@@ -258,6 +264,7 @@ try:
     import oneandone.client
 except ImportError:
     HAS_ONEANDONE_SDK = False
+
 
 def _wait_for_monitoring_policy_creation_completion(oneandone_conn, monitoring_policy, wait_timeout):
     wait_timeout = time.time() + wait_timeout
@@ -704,7 +711,7 @@ def main():
             module.fail_json(msg=str(e))
 
     elif state == 'present':
-        for param in ('name','agent','email','thresholds','ports','processes'):
+        for param in ('name', 'agent', 'email', 'thresholds', 'ports', 'processes'):
             if not module.params.get(param):
                 module.fail_json(
                     msg="%s parameter is required for a new monitoring policy." % param)
@@ -716,6 +723,6 @@ def main():
     module.exit_json(changed=changed, monitoring_policy=monitoring_policy)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

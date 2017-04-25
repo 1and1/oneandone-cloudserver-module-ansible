@@ -66,7 +66,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -112,7 +115,7 @@ EXAMPLES = '''
 
 '''
 
-from copy import copy
+import os
 import time
 
 HAS_ONEANDONE_SDK = True
@@ -429,6 +432,6 @@ def main():
     module.exit_json(changed=changed, firewall_policy=firewall_policy)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

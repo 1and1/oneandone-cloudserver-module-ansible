@@ -115,10 +115,13 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
-from copy import copy
+import os
 import time
 
 HAS_ONEANDONE_SDK = True
@@ -131,6 +134,7 @@ except ImportError:
 DATACENTERS = ['US', 'ES', 'DE', 'GB']
 HEALTH_CHECK_TESTS = ['NONE', 'TCP', 'HTTP', 'ICMP']
 METHODS = ['ROUND_ROBIN', 'LEAST_CONNECTIONS']
+
 
 def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, wait_timeout):
     wait_timeout = time.time() + wait_timeout
@@ -283,7 +287,7 @@ def update_load_balancer(module, oneandone_conn):
     load_balancer = _find_load_balancer(oneandone_conn, name)
 
     if (name or description or health_check_test or health_check_interval or health_check_path
-        or health_check_parse or persistence or persistence_time or method):
+            or health_check_parse or persistence or persistence_time or method):
         load_balancer = oneandone_conn.modify_load_balancer(
             load_balancer_id=load_balancer['id'],
             name=name,
@@ -477,7 +481,7 @@ def main():
             module.fail_json(msg=str(e))
 
     elif state == 'present':
-        for param in ('name','health_check_test','health_check_interval','persistence','persistence_time','method'):
+        for param in ('name', 'health_check_test', 'health_check_interval', 'persistence', 'persistence_time', 'method'):
             if not module.params.get(param):
                 module.fail_json(
                     msg="%s parameter is required for new networks." % param)
@@ -489,6 +493,6 @@ def main():
     module.exit_json(changed=changed, load_balancer=load_balancer)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()
