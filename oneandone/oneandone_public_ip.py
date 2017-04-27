@@ -41,7 +41,8 @@ options:
     maxLength: 256
   datacenter:
     description:
-      - ID of the datacenter where the IP will be created (only for unassigned IPs).
+      - ID of the datacenter where the IP will be created (only for unassigned
+        IPs).
     type: 'string'
     required: false
   type:
@@ -55,7 +56,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -76,7 +80,7 @@ EXAMPLES = '''
 
 '''
 
-from copy import copy
+import os
 import time
 
 HAS_ONEANDONE_SDK = True
@@ -102,7 +106,7 @@ def _find_datacenter(oneandone_conn, datacenter):
 
 
 def _wait_for_public_ip_creation_completion(oneandone_conn,
-                                          public_ip, wait_timeout):
+                                            public_ip, wait_timeout):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
         time.sleep(5)
@@ -157,13 +161,14 @@ def create_public_ip(module, oneandone_conn):
         if wait:
             _wait_for_public_ip_creation_completion(
                 oneandone_conn, public_ip, wait_timeout)
-            public_ip = oneandone_conn.get_public_ip(public_ip['id'])  # refresh
+            public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         changed = True if public_ip else False
 
         return (changed, public_ip)
     except Exception as e:
         module.fail_json(msg=str(e))
+
 
 def update_public_ip(module, oneandone_conn):
     """
@@ -197,11 +202,12 @@ def update_public_ip(module, oneandone_conn):
         if wait:
             _wait_for_public_ip_creation_completion(
                 oneandone_conn, public_ip, wait_timeout)
-            public_ip = oneandone_conn.get_public_ip(public_ip['id'])  # refresh
+            public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         return (changed, public_ip)
     except Exception as e:
         module.fail_json(msg=str(e))
+
 
 def delete_public_ip(module, oneandone_conn):
     """
@@ -231,6 +237,7 @@ def delete_public_ip(module, oneandone_conn):
         })
     except Exception as e:
         module.fail_json(msg=str(e))
+
 
 def main():
     module = AnsibleModule(
@@ -285,6 +292,6 @@ def main():
     module.exit_json(changed=changed, public_ip=public_ip)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

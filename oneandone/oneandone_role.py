@@ -22,7 +22,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: oneandone_roles
+module: oneandone_role
 short_description: Configure 1&1 roles.
 description:
      - Create, remove, update a role
@@ -56,8 +56,14 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
+
+import os
+import time
 
 HAS_ONEANDONE_SDK = True
 
@@ -399,6 +405,6 @@ def main():
     module.exit_json(changed=changed, role=role)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

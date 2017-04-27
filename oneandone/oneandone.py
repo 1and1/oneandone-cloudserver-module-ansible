@@ -201,7 +201,7 @@ machines:
     returned: always
 '''
 
-from copy import copy
+import os
 import time
 
 HAS_ONEANDONE_SDK = True
@@ -465,9 +465,9 @@ def remove_machine(module, oneandone_conn):
 
     changed = True if removed_machines else False
     machines = [{
-        'id': machine['id'],
-        'hostname': machine['name'],
-    } for machine in removed_machines]
+        'id': removed_machine['id'],
+        'hostname': removed_machine['name'],
+    } for removed_machine in removed_machines]
 
     return (changed, machines)
 
@@ -549,7 +549,7 @@ def startstop_machine(module, oneandone_conn):
         changed = True
         machines.append(machine)
 
-    machines = [_insert_network_data(machine) for machine in machines]
+    machines = [_insert_network_data(_machine) for _machine in machines]
 
     return (changed, machines)
 
@@ -674,6 +674,6 @@ def main():
     module.exit_json(changed=changed, machines=machines)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()

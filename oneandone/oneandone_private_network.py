@@ -62,7 +62,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: Amel Ajdinovic (@aajdinov)
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -121,7 +124,7 @@ private_network:
     returned: always
 '''
 
-from copy import copy
+import os
 import time
 
 HAS_ONEANDONE_SDK = True
@@ -427,6 +430,6 @@ def main():
     module.exit_json(changed=changed, private_network=private_network)
 
 
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
 main()
