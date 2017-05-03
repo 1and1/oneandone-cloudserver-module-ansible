@@ -37,6 +37,10 @@ options:
     description:
       - The identifier (id or name) of the load balancer used with update state.
     required: true
+  load_balancer:
+    description:
+      - The identifier (id or name) of the load balancer used with update state.
+    required: true
   api_url:
     description:
       - Custom API URL. Overrides the
@@ -161,10 +165,108 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+'''
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+EXAMPLES = '''
+
+# Provisioning example. Create and destroy a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    name: ansible load balancer
+    description: Testing creation of load balancer with ansible
+    health_check_test: TCP
+    health_check_interval: 40
+    persistence: true
+    persistence_time: 1200
+    method: ROUND_ROBIN
+    datacenter: US
+    rules:
+     -
+       protocol: TCP
+       port_balancer: 80
+       port_server: 80
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    name: ansible load balancer
+    wait: true
+    wait_timeout: 500
+    state: absent
+
+# Update a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer
+    name: ansible load balancer updated
+    description: Testing the update of a load balancer with ansible
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Add server to a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding server to a load balancer with ansible
+    add_server_ips:
+     - server identifier (id or name)
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Remove server from a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Removing server from a load balancer with ansible
+    remove_server_ips:
+     - B2504878540DBC5F7634EB00A07C1EBD (server's ip id)
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Add rules to a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding rules to a load balancer with ansible
+    add_rules:
+     -
+       protocol: TCP
+       port_balancer: 70
+       port_server: 70
+       source: 0.0.0.0
+     -
+       protocol: TCP
+       port_balancer: 60
+       port_server: 60
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Remove rules from a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding rules to a load balancer with ansible
+    remove_rules:
+     - rule_id #1
+     - rule_id #2
+     - ...
+    wait: true
+    wait_timeout: 500
+    state: update
 '''
 
 EXAMPLES = '''

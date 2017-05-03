@@ -53,6 +53,10 @@ options:
     description:
       - The identifier (id or name) of the user - used with update state.
     required: true
+  user:
+    description:
+      - The identifier (id or name) of the user - used with update state.
+    required: true
   password:
     description:
       - User's password. Pass must contain at least 8 characters using
@@ -98,9 +102,36 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+'''
+
+EXAMPLES = '''
+
+# Create a user.
+
+- oneandone_user:
+    auth_token: oneandone_private_api_key
+    name: ansible_user
+    description: Create a user with ansible
+    password: desired password
+    email: email@address.com
+
+# Update a user.
+
+- oneandone_user:
+    auth_token: oneandone_private_api_key
+    user: ansible_user
+    description: Updated a user with ansible
+    state: update
+
+
+# Delete a user
+
+- oneandone_user:
+    auth_token: oneandone_private_api_key
+    name: ansible_user
+    state: absent
+
 '''
 
 EXAMPLES = '''

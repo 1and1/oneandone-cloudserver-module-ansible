@@ -292,10 +292,235 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+'''
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+EXAMPLES = '''
+
+# Provisioning example. Create and destroy a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    name: ansible monitoring policy
+    description: Testing creation of a monitoring policy with ansible
+    email: your@emailaddress.com
+    agent: true
+    thresholds:
+     -
+       cpu:
+         warning:
+           value: 80
+           alert: false
+         critical:
+           value: 92
+           alert: false
+     -
+       ram:
+         warning:
+           value: 80
+           alert: false
+         critical:
+           value: 90
+           alert: false
+     -
+       disk:
+         warning:
+           value: 80
+           alert: false
+         critical:
+           value: 90
+           alert: false
+     -
+       internal_ping:
+         warning:
+           value: 50
+           alert: false
+         critical:
+           value: 100
+           alert: false
+     -
+       transfer:
+         warning:
+           value: 1000
+           alert: false
+         critical:
+           value: 2000
+           alert: false
+    ports:
+     -
+       protocol: TCP
+       port: 22
+       alert_if: RESPONDING
+       email_notification: false
+    processes:
+     -
+       process: test
+       alert_if: NOT_RUNNING
+       email_notification: false
+    wait: true
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    state: absent
+    name: ansible monitoring policy
+
+# Update a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy
+    name: ansible monitoring policy updated
+    description: Testing creation of a monitoring policy with ansible updated
+    email: another@emailaddress.com
+    thresholds:
+     -
+       cpu:
+         warning:
+           value: 70
+           alert: false
+         critical:
+           value: 90
+           alert: false
+     -
+       ram:
+         warning:
+           value: 70
+           alert: false
+         critical:
+           value: 80
+           alert: false
+     -
+       disk:
+         warning:
+           value: 70
+           alert: false
+         critical:
+           value: 80
+           alert: false
+     -
+       internal_ping:
+         warning:
+           value: 60
+           alert: false
+         critical:
+           value: 90
+           alert: false
+     -
+       transfer:
+         warning:
+           value: 900
+           alert: false
+         critical:
+           value: 1900
+           alert: false
+    wait: true
+    state: update
+
+# Add a port to a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    add_ports:
+     -
+       protocol: TCP
+       port: 33
+       alert_if: RESPONDING
+       email_notification: false
+    wait: true
+    state: update
+
+# Update existing ports of a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    update_ports:
+     -
+       id: existing_port_id
+       protocol: TCP
+       port: 34
+       alert_if: RESPONDING
+       email_notification: false
+     -
+       id: existing_port_id
+       protocol: TCP
+       port: 23
+       alert_if: RESPONDING
+       email_notification: false
+    wait: true
+    state: update
+
+# Remove a port from a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    remove_ports:
+     - port_id
+    state: update
+
+# Add a process to a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    add_processes:
+     -
+       process: test_2
+       alert_if: NOT_RUNNING
+       email_notification: false
+    wait: true
+    state: update
+
+# Update existing processes of a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    update_processes:
+     -
+       id: process_id
+       process: test_1
+       alert_if: NOT_RUNNING
+       email_notification: false
+     -
+       id: process_id
+       process: test_3
+       alert_if: NOT_RUNNING
+       email_notification: false
+    wait: true
+    state: update
+
+# Remove a process from a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    remove_processes:
+     - process_id
+    wait: true
+    state: update
+
+# Add server to a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    add_servers:
+     - server id or name
+    wait: true
+    state: update
+
+# Remove server from a monitoring policy.
+
+- oneandone_moitoring_policy:
+    auth_token: oneandone_private_api_key
+    monitoring_policy: ansible monitoring policy updated
+    remove_servers:
+     - server01
+    wait: true
+    state: update
 '''
 
 EXAMPLES = '''

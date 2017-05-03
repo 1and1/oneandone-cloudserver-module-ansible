@@ -75,9 +75,36 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+'''
+
+EXAMPLES = '''
+
+# Create a VPN.
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    datacenter: US
+    name: ansible VPN
+    description: Create a VPN using ansible
+    
+# Update a VPN.
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    vpn: ansible VPN
+    name: ansible VPN updated
+    description: Update a VPN using ansible
+    state: update
+
+
+# Delete a VPN
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    name: ansible VPN updated
+    state: absent
+
 '''
 
 EXAMPLES = '''

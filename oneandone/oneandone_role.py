@@ -53,6 +53,10 @@ options:
     description:
       - The identifier (id or name) of the role - used with update state.
     required: true
+  role:
+    description:
+      - The identifier (id or name) of the role - used with update state.
+    required: true
   description:
     description:
       - Role description.
@@ -118,9 +122,7 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 import os

@@ -43,6 +43,10 @@ options:
     description:
       - The identifier (id or name) of the network used with update state.
     required: true
+  private_network:
+    description:
+      - The identifier (id or name) of the network used with update state.
+    required: true
   api_url:
     description:
       - Custom API URL. Overrides the
@@ -85,10 +89,7 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''

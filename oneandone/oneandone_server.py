@@ -149,16 +149,13 @@ options:
       - When creating multiple machines at once, whether to differentiate
         hostnames by appending a count after them or substituting the count
         where there is a %02d or %03d in the hostname string.
-    default: yes
-    choices: ["yes", "no"]
+    default: "yes"
+    choices: [ "yes", "no" ]
 
 requirements:
   - "1and1"
   - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''
