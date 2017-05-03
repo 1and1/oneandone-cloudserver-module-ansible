@@ -4,62 +4,52 @@
   gather_facts: True
 
   tasks:
-    - name: Create a monitoring policy
+    - name: Update a monitoring policy
       oneandone_monitoring_policy:
-        name: ansible monitoring policy
-        description: Testing creation of a monitoring policy with ansible
-        email: your@emailaddress.com
-        agent: true
+        monitoring_policy: ansible monitoring policy
+        name: ansible monitoring policy updated
+        description: Testing monitoring policy update with ansible
+        email: other@emailaddress.com
         thresholds:
          - 
            cpu:
              warning:
-               value: 80
+               value: 70
                alert: false
              critical:
-               value: 92
+               value: 90
                alert: false
          - 
            ram:
              warning:
-               value: 80
+               value: 70
                alert: false
              critical:
-               value: 90
+               value: 80
                alert: false
          - 
            disk:
              warning:
+               value: 70
+               alert: false
+             critical:
                value: 80
+               alert: false
+         - 
+           internal_ping:
+             warning:
+               value: 60
                alert: false
              critical:
                value: 90
                alert: false
          - 
-           internal_ping:
-             warning:
-               value: 50
-               alert: false
-             critical:
-               value: 100
-               alert: false
-         - 
            transfer:
              warning:
-               value: 1000
+               value: 900
                alert: false
              critical:
-               value: 2000
+               value: 1900
                alert: false
-        ports:
-         -
-           protocol: TCP
-           port: 22
-           alert_if: RESPONDING
-           email_notification: false
-        processes:
-         -
-           process: test
-           alert_if: NOT_RUNNING
-           email_notification: false
         wait: true
+        state: update

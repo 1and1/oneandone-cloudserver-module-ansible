@@ -7,8 +7,8 @@
     - name: Create a user
       oneandone_user:
         name: ansible_user
-        description: Create a user with ansible
+        description: Create a user with ansible - test
         password: Ansib1e_pa$$word
-        email: user@example.com
+        email: amel@stackpointcloud.com
         wait: true
         wait_timeout: 500

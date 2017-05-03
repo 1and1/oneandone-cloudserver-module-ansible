@@ -35,8 +35,12 @@ options:
     required: true
   name:
     description:
-      - VPN name.
+      - VPN name used with present state. Used as identifier (id or name) when used with absent state.
     maxLength: 128
+    required: true
+  vpn:
+    description:
+      - The identifier (id or name) of the VPN used with update state.
     required: true
   description:
     description:
@@ -52,9 +56,36 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+'''
+
+EXAMPLES = '''
+
+# Create a VPN.
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    datacenter: US
+    name: ansible VPN
+    description: Create a VPN using ansible
+    
+# Update a VPN.
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    vpn: ansible VPN
+    name: ansible VPN updated
+    description: Update a VPN using ansible
+    state: update
+
+
+# Delete a VPN
+
+- oneandone_vpn:
+    auth_token: oneandone_private_api_key
+    name: ansible VPN updated
+    state: absent
+
 '''
 
 import os
@@ -81,8 +112,7 @@ def _wait_for_vpn_creation_completion(oneandone_conn, vpn, wait_timeout):
         elif vpn['state'].lower() == 'failed':
             raise Exception('VPN creation ' +
                             ' failed for %s' % vpn['id'])
-        elif vpn['state'].lower() in ('active',
-                                      'enabled',
+        elif vpn['state'].lower() in ('enabled',
                                       'deploying',
                                       'configuring'):
             continue
@@ -121,14 +151,14 @@ def update_vpn(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    _vpn = module.params.get('vpn')
+    _vpn_id = module.params.get('vpn')
     _name = module.params.get('name')
     _description = module.params.get('description')
 
-    vpn = _find_vpn(oneandone_conn, _vpn)
+    vpn = _find_vpn(oneandone_conn, _vpn_id)
 
     try:
-        updated_vpn = oneandone_conn.modify_vpn(vpn['id'],
+        updated_vpn = oneandone_conn.modify_vpn(vpn_id=vpn['id'],
                                                 name=_name,
                                                 description=_description)
 
@@ -186,7 +216,8 @@ def remove_vpn(module, oneandone_conn):
     oneandone_conn: authenticated oneandone object
     """
     try:
-        _vpn = module.params.get('vpn')
+        _vpn = module.params.get('name')
+
         vpn = _find_vpn(oneandone_conn, _vpn)
         vpn = oneandone_conn.delete_vpn(vpn['id'])
 
@@ -205,8 +236,9 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
-            vpn=dict(type='str'),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
+            vpn_id=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),
             datacenter=dict(type='str'),
@@ -231,11 +263,17 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required to delete a VPN.")
         try:
             (changed, vpn) = remove_vpn(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
+        if not module.params.get('vpn'):
+            module.fail_json(
+                msg="'vpn' parameter is required to update a VPN.")
         try:
             (changed, vpn) = update_vpn(module, oneandone_conn)
         except Exception as e:

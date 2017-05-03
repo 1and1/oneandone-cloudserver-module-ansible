@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Add port to an existing monitoring policy
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        add_ports:
+         -
+           protocol: TCP
+           port: 33
+           alert_if: RESPONDING
+           email_notification: false
+        wait: true
+        state: update

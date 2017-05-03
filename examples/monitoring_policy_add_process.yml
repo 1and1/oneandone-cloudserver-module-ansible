@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Add a process to an existing monitoring policy
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        add_processes:
+         -
+           process: test_2
+           alert_if: NOT_RUNNING
+           email_notification: false
+        wait: true
+        state: update

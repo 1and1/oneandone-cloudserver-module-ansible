@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Remove an exising port from a monitoring policy
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        remove_ports:
+         - port_id
+        state: update

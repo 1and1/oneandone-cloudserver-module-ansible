@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Attach an existing server to an existing monitoring policy
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        add_servers:
+         - server_id
+        wait: true
+        state: update

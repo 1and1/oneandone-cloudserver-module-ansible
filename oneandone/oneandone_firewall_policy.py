@@ -25,19 +25,33 @@ DOCUMENTATION = '''
 module: oneandone_firewall_policy
 short_description: Configure 1&1 firewall policy.
 description:
-     - Create, remove, reconfigure, update firewall policies
-       This module has a dependency on 1and1 >= 1.0
-version_added: "2.1"
+     - Create, remove, reconfigure, update firewall policies.
+version_added: "2.4"
 options:
+  state:
+    description:
+      - Define a firewall policy state to create, remove, or update.
+    required: false
+    default: 'present'
+    choices: [ "present", "absent", "update" ]
   auth_token:
     description:
       - Authenticating API token provided by 1&1.
     required: true
   name:
     description:
-      - Firewall policy name.
+      - Firewall policy name used with present state. Used as identifier (id or name) when used with absent state.
     required: true
     maxLength: 128
+  firewall_policy:
+    description:
+      - The identifier (id or name) of the firewall policy used with update state.
+    required: true
+  rules:
+    description:
+      - A list of rules that will be set for the firewall policy.
+        Each rule must contain protocol parameter, in addition to three optional parameters
+        (port_from, port_to, and source)
   port_from:
     description:
       - First port in range. Required for UDP and TCP protocols, otherwise it will be set up automatically.
@@ -50,12 +64,30 @@ options:
   protocol:
     description:
       - Internet protocol
-      choices: [ "TCP", "UDP", "ICMP", "AH", "ESP", "GRE" ]
-      required: true
+    choices: [ "TCP", "UDP", "ICMP", "AH", "ESP", "GRE" ]
+    required: true
   source:
     description:
       - IPs from which access is available. Setting 0.0.0.0 all IPs are allowed.
     default: 0.0.0.0
+    required: false
+  add_server_ips:
+    description:
+      - A list of server identifiers (id or name) to be assigned to a firewall policy.
+        Used in combination with update state.
+    required: false
+  remove_server_ips:
+    description:
+      - A list of server IP ids to be unassigned from a firewall policy. Used in combination with update state.
+    required: false
+  add_rules:
+    description:
+      - A list of rules that will be added to an existing firewall policy.
+        It is syntax is the same as the one used for rules parameter. Used in combination with update state.
+    required: false
+  remove_rules:
+    description:
+      - A list of rule ids that will be removed from an existing firewall policy. Used in combination with update state.
     required: false
   description:
     description:
@@ -66,57 +98,103 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''
 
-# Provisioning example. Create and destroy private networks.
+# Provisioning example. Create and destroy a firewall policy.
 
-- oneandone_private_network:
+- oneandone_firewall_policy:
     auth_token: oneandone_private_api_key
-    name: backup_network
-    datacenter: US
-    network_address: 192.168.1.0
-    subnet_mask: 255.255.255.0
+    name: ansible-firewall-policy
+    description: Testing creation of firewall policies with ansible
+    rules:
+     -
+       protocol: TCP
+       port_from: 80
+       port_to: 80
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
 
-- oneandone_private_network:
+- oneandone_firewall_policy:
     auth_token: oneandone_private_api_key
     state: absent
-    name: backup_network
+    name: ansible-firewall-policy
 
-# Reconfigure the private network.
+# Update a firewall policy.
 
-- oneandone_private_network:
-    auth_token: oneandone_private_api_key
-    state: reconfigure
-    name: backup_network
-    network_address: 192.168.2.0
-    subnet_mask: 255.255.255.0
-
-# Add members to the private network.
-
-- oneandone_private_network:
+- oneandone_firewall_policy:
     auth_token: oneandone_private_api_key
     state: update
-    name: backup_network
-    add_members: host01
+    firewall_policy: ansible-firewall-policy
+    name: ansible-firewall-policy-updated
+    description: Testing creation of firewall policies with ansible - updated
 
-# Remove members from the private network.
+# Add server to a firewall policy.
 
-- oneandone_private_network:
+- oneandone_firewall_policy:
     auth_token: oneandone_private_api_key
+    firewall_policy: ansible-firewall-policy-updated
+    add_server_ips:
+     - server_identifier (id or name)
+     - server_identifier #2 (id or name)
+    wait: true
+    wait_timeout: 500
     state: update
-    name: backup_network
-    remove_members: host01
+
+# Remove server from a firewall policy.
+
+- oneandone_firewall_policy:
+    auth_token: oneandone_private_api_key
+    firewall_policy: ansible-firewall-policy-updated
+    remove_server_ips:
+     - B2504878540DBC5F7634EB00A07C1EBD (server's IP id)
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Add rules to a firewall policy.
+
+- oneandone_firewall_policy:
+    auth_token: oneandone_private_api_key
+    firewall_policy: ansible-firewall-policy-updated
+    description: Adding rules to an existing firewall policy
+    add_rules:
+     -
+       protocol: TCP
+       port_from: 70
+       port_to: 70
+       source: 0.0.0.0
+     -
+       protocol: TCP
+       port_from: 60
+       port_to: 60
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Remove rules from a firewall policy.
+
+- oneandone_firewall_policy:
+    auth_token: oneandone_private_api_key
+    firewall_policy: ansible-firewall-policy-updated
+    remove_rules:
+     - rule_id #1
+     - rule_id #2
+     - ...
+    wait: true
+    wait_timeout: 500
+    state: update
 
 '''
 
-import os
+from copy import copy
 import time
+import os
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -131,25 +209,24 @@ def _wait_for_firewall_policy_creation_completion(oneandone_conn, firewall_polic
     while wait_timeout > time.time():
         time.sleep(5)
 
-        # Refresh the network info
+        # Refresh the firewall policy info
         firewall_policy = oneandone_conn.get_firewall(firewall_policy['id'])
 
         if firewall_policy['state'].lower() == 'active':
             return
         elif firewall_policy['state'].lower() == 'failed':
-            raise Exception('Private network creation ' +
-                            ' failed for %' % firewall_policy['id'])
-        elif firewall_policy['state'].lower() in ('active',
-                                                  'enabled',
+            raise Exception('Firewall policy creation ' +
+                            ' failed for %s' % firewall_policy['id'])
+        elif firewall_policy['state'].lower() in ('enabled',
                                                   'deploying',
                                                   'configuring'):
             continue
         else:
             raise Exception(
-                'Unknown network state %s' % firewall_policy['state'])
+                'Unknown firewall policy state %s' % firewall_policy['state'])
 
     raise Exception(
-        'Timed out waiting for network competion for %s' % firewall_policy['id'])
+        'Timed out waiting for firewall policy completion for %s' % firewall_policy['id'])
 
 
 def _find_firewall_policy(oneandone_conn, firewall_policy):
@@ -256,6 +333,7 @@ def update_firewall_policy(module, oneandone_conn):
     oneandone_conn: authenticated oneandone object
     """
     try:
+        firewall_policy_id = module.params.get('firewall_policy')
         name = module.params.get('name')
         description = module.params.get('description')
         add_server_ips = module.params.get('add_server_ips')
@@ -265,7 +343,7 @@ def update_firewall_policy(module, oneandone_conn):
 
         changed = False
 
-        firewall_policy = _find_firewall_policy(oneandone_conn, name)
+        firewall_policy = _find_firewall_policy(oneandone_conn, firewall_policy_id)
 
         if name or description:
             firewall_policy = oneandone_conn.modify_firewall(
@@ -361,8 +439,8 @@ def remove_firewall_policy(module, oneandone_conn):
     oneandone_conn: authenticated oneandone object
     """
     try:
-        name = module.params.get('name')
-        firewall_policy = _find_firewall_policy(oneandone_conn, name)
+        fp_id = module.params.get('name')
+        firewall_policy = _find_firewall_policy(oneandone_conn, fp_id)
         firewall_policy = oneandone_conn.delete_firewall(firewall_policy['id'])
 
         changed = True if firewall_policy else False
@@ -380,8 +458,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
             name=dict(type='str'),
+            firewall_policy=dict(type='str'),
             description=dict(type='str'),
             rules=dict(type='list', default=[]),
             add_server_ips=dict(type='list', default=[]),
@@ -409,21 +489,27 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required to delete a firewall policy.")
         try:
             (changed, firewall_policy) = remove_firewall_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
     elif state == 'update':
+        if not module.params.get('firewall_policy'):
+            module.fail_json(
+                msg="'firewall_policy' parameter is required to update a firewall policy.")
         try:
             (changed, firewall_policy) = update_firewall_policy(module, oneandone_conn)
         except Exception as e:
             module.fail_json(msg=str(e))
 
     elif state == 'present':
-        for param in ('name',):
+        for param in ('name', 'rules'):
             if not module.params.get(param):
                 module.fail_json(
-                    msg="%s parameter is required for new networks." % param)
+                    msg="%s parameter is required for new firewall policies." % param)
         try:
             (changed, firewall_policy) = create_firewall_policy(module, oneandone_conn)
         except Exception as e:
@@ -432,6 +518,5 @@ def main():
     module.exit_json(changed=changed, firewall_policy=firewall_policy)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

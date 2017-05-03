@@ -5,11 +5,26 @@
 
   tasks:
     - name: Create a server
-      oneandone:
+      oneandone_server:
         hostname: server%02d
         description: testing server creation with ansible
         auto_increment: true
         appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
-        fixed_instance_size: S
+        vcore: 2
+        cores_per_processor: 1
+        ram: 1
+        hdds:
+         -
+           is_main: true
+           size: 20
+         -
+           is_main: false
+           size: 20
         datacenter: US
+        firewall_policy: firewall_policy_id (or name)
+        private_network: private_network_id (or name)
+        monitoring_policy: monitoring_policy_id (or name)
+        load_balancer: load_balancer_id (or name)
         state: present
+      register: oneandone
+

@@ -14,28 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.0',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+ANSIBLE_METADATA = {'metadata_version': '1.0',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
 
 DOCUMENTATION = '''
 ---
-module: oneandone
-short_description: create, destroy, start, stop, and reboot a 1&1 Host machine.
+module: oneandone_server
+short_description: Create, destroy, start, stop, and reboot a 1&1 Host machine.
 description:
-     - create, destroy, update, start, stop, and reboot a 1&1 Host machine.
-       When the machine is created it can optionally wait for it to be
-       'running' before returning.
-       This module has a dependency on 1and1 >= 1.0
-version_added: "2.1"
+     - Create, destroy, update, start, stop, and reboot a 1&1 Host machine.
+       When the machine is created it can optionally wait for it to be 'running' before returning.
+version_added: "2.4"
 options:
   state:
     description:
       - Define a machine's state to create, remove, start or stop it.
     required: false
-    default: 'present'
+    default: present
     choices: [ "present", "absent", "running", "stopped" ]
   auth_token:
     description:
@@ -51,7 +48,7 @@ options:
   hostname:
     description:
       - The hostname or ID of the machine. Only used when state is 'present'.
-    required: true when state is 'present', false otherwise.
+    required: true
   description:
     description:
       - The description of the machine.
@@ -59,36 +56,55 @@ options:
   appliance:
     description:
       - The operating system name or ID for the machine.
-    required: true for 'present' state, false otherwise
+        It is required only for 'present' state.
+    required: true
   fixed_instance_size:
     description:
       - The instance size name or ID of the machine.
-    required: true for 'present' state, false otherwise
+        It is required only for 'present' state, and it is mutually exclusive with
+        vcore, cores_per_processor, ram, and hdds parameters.
+    required: true
     choices: [ "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL" ]
   vcore:
     description:
       - The total number of processors.
-    required: true with cores_per_processor, ram, and hdds
+        It must be provided with cores_per_processor, ram, and hdds parameters.
+    required: true
   cores_per_processor:
     description:
       - The number of cores per processor.
-    required: true with vcore, ram, and hdds
+        It must be provided with vcore, ram, and hdds parameters.
+    required: true
   ram:
     description:
       - The amount of RAM memory.
-    required: true with vcore, cores_per_processor, and hdds
+        It must be provided with with vcore, cores_per_processor, and hdds parameters.
+    required: true
   hdds:
     description:
       - A list of hard disks with nested "size" and "is_main" properties.
-    required: true with vcore, cores_per_processor, and ram
+        It must be provided with vcore, cores_per_processor, and ram parameters.
+    required: true
   private_network:
     description:
-      - The private network name or ID of the machine.
+      - The private network name or ID.
+    required: false
+  firewall_policy:
+    description:
+      - The firewall policy name or ID.
+    required: false
+  load_balancer:
+    description:
+      - The load balancer name or ID.
+    required: false
+  monitoring_policy:
+    description:
+      - The monitoring policy name or ID.
     required: false
   instance_ids:
     description:
-      - List of machine IDs or hostnames.
-    required: false for 'running' state, true otherwise
+      - List of machine IDs or hostnames. It is required for all states except 'running'.
+    required: true
   count:
     description:
       - The number of machines to create.
@@ -96,12 +112,15 @@ options:
     default: 1
   ssh_key:
     description:
-      - User's public SSH key.
+      - User's public SSH key (contents, not path).
     required: false
     default: None
   wait:
     description:
-      - wait for the instance to be in state 'running' before returning
+      - Wait for the instance to be in state 'running' before returning.
+        Also used for delete operation (set to 'false' if you don't want to wait
+        for each individual server to be deleted before moving on with
+        other tasks.)
     required: false
     default: "yes"
     choices: [ "yes", "no" ]
@@ -114,23 +133,20 @@ options:
       - When creating multiple machines at once, whether to differentiate
         hostnames by appending a count after them or substituting the count
         where there is a %02d or %03d in the hostname string.
-    default: yes
-    choices: ["yes", "no"]
+    default: "yes"
+    choices: [ "yes", "no" ]
 
 requirements:
   - "1and1"
   - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''
 
 # Provisioning example. Creates three servers and enumerate their names.
 
-- oneandone:
+- oneandone_server:
     auth_token: oneandone_private_api_key
     hostname: node%02d
     fixed_instance_size: XL
@@ -141,7 +157,7 @@ EXAMPLES = '''
 
 # Create three machines, passing in an ssh_key.
 
-- oneandone:
+- oneandone_server:
     auth_token: oneandone_private_api_key
     hostname: node%02d
     vcore: 2
@@ -159,7 +175,7 @@ EXAMPLES = '''
 
 # Removing machines
 
-- oneandone:
+- oneandone_server:
     auth_token: oneandone_private_api_key
     state: absent
     instance_ids:
@@ -169,7 +185,7 @@ EXAMPLES = '''
 
 # Starting Machines.
 
-- oneandone:
+- oneandone_server:
     auth_token: oneandone_private_api_key
     state: running
     instance_ids:
@@ -179,7 +195,7 @@ EXAMPLES = '''
 
 # Stopping Machines
 
-- oneandone:
+- oneandone_server:
     auth_token: oneandone_private_api_key
     state: stopped
     instance_ids:
@@ -196,13 +212,14 @@ changed:
     returned: always
 machines:
     description: Information about each machine that was processed
-    type: array
+    type: list
     sample: '[{"hostname": "my-server", "id": "server-id"}]'
     returned: always
 '''
 
 import os
 import time
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -264,6 +281,39 @@ def _find_private_network(oneandone_conn, private_network):
             return _private_network['id']
 
 
+def _find_monitoring_policy(oneandone_conn, monitoring_policy):
+    """
+    Validates the monitoring policy exists by ID or name.
+    Return the monitoring policy ID.
+    """
+    for _monitoring_policy in oneandone_conn.list_monitoring_policies():
+        if monitoring_policy in (_monitoring_policy['name'],
+                                 _monitoring_policy['id']):
+            return _monitoring_policy['id']
+
+
+def _find_firewall_policy(oneandone_conn, firewall_policy):
+    """
+    Validates the firewall policy exists by ID or name.
+    Return the firewall policy ID.
+    """
+    for _firewall_policy in oneandone_conn.list_firewall_policies():
+        if firewall_policy in (_firewall_policy['name'],
+                               _firewall_policy['id']):
+            return _firewall_policy['id']
+
+
+def _find_load_balancer(oneandone_conn, load_balancer):
+    """
+    Validates the load balancer exists by ID or name.
+    Return the load balancer ID.
+    """
+    for _load_balancer in oneandone_conn.list_load_balancers():
+        if load_balancer in (_load_balancer['name'],
+                             _load_balancer['id']):
+            return _load_balancer['id']
+
+
 def _find_machine(oneandone_conn, instance):
     """
     Validates that the machine exists whether by ID or name.
@@ -286,7 +336,7 @@ def _wait_for_machine_creation_completion(oneandone_conn,
         if machine['status']['state'].lower() == 'powered_on':
             return
         elif machine['status']['state'].lower() == 'failed':
-            raise Exception('Machine creation failed for %' % machine['id'])
+            raise Exception('Machine creation failed for %s' % machine['id'])
         elif machine['status']['state'].lower() in ('active',
                                                     'enabled',
                                                     'deploying'):
@@ -299,10 +349,33 @@ def _wait_for_machine_creation_completion(oneandone_conn,
         'Timed out waiting for machine competion for %s' % machine['id'])
 
 
+def _wait_for_machine_deletion_completion(oneandone_conn,
+                                          machine,
+                                          wait_timeout):
+    wait_timeout = time.time() + wait_timeout
+    while wait_timeout > time.time():
+        time.sleep(5)
+
+        # Refresh the operation info
+        logs = oneandone_conn.list_logs(q='DELETE',
+                                        period='LAST_HOUR',
+                                        sort='-start_date')
+
+        for log in logs:
+            if (log['resource']['id'] == machine['id'] and
+                    log['action'] == 'DELETE' and
+                    log['type'] == 'VM' and
+                    log['status']['state'] == 'OK'):
+                return
+    raise Exception(
+        'Timed out waiting for machine deletion for %s' % machine['id'])
+
+
 def _create_machine(module, oneandone_conn, hostname, description,
                     fixed_instance_size_id, vcore, cores_per_processor, ram,
                     hdds, datacenter_id, appliance_id, ssh_key,
-                    private_network_id, wait, wait_timeout):
+                    private_network_id, firewall_policy_id, load_balancer_id,
+                    monitoring_policy_id, wait, wait_timeout):
 
     try:
         machine = oneandone_conn.create_server(
@@ -316,7 +389,10 @@ def _create_machine(module, oneandone_conn, hostname, description,
                 appliance_id=appliance_id,
                 datacenter_id=datacenter_id,
                 rsa_key=ssh_key,
-                private_network_id=private_network_id), hdds)
+                private_network_id=private_network_id,
+                firewall_policy_id=firewall_policy_id,
+                load_balancer_id=load_balancer_id,
+                monitoring_policy_id=monitoring_policy_id,), hdds)
 
         if wait:
             _wait_for_machine_creation_completion(
@@ -361,9 +437,11 @@ def create_machine(module, oneandone_conn):
     appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
     private_network = module.params.get('private_network')
+    monitoring_policy = module.params.get('monitoring_policy')
+    firewall_policy = module.params.get('firewall_policy')
+    load_balancer = module.params.get('load_balancer')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
-    private_network_id = None
 
     datacenter_id = _find_datacenter(oneandone_conn, datacenter)
     if datacenter_id is None:
@@ -384,6 +462,7 @@ def create_machine(module, oneandone_conn):
         module.fail_json(
             msg='datacenter %s not found.' % appliance)
 
+    private_network_id = None
     if private_network:
         private_network_id = _find_private_network(
             oneandone_conn,
@@ -391,6 +470,33 @@ def create_machine(module, oneandone_conn):
         if private_network_id is None:
             module.fail_json(
                 msg='private network %s not found.' % private_network)
+
+    monitoring_policy_id = None
+    if monitoring_policy:
+        monitoring_policy_id = _find_monitoring_policy(
+            oneandone_conn,
+            monitoring_policy)
+        if monitoring_policy_id is None:
+            module.fail_json(
+                msg='monitoring policy %s not found.' % monitoring_policy)
+
+    firewall_policy_id = None
+    if firewall_policy:
+        firewall_policy_id = _find_firewall_policy(
+            oneandone_conn,
+            firewall_policy)
+        if firewall_policy_id is None:
+            module.fail_json(
+                msg='firewall policy %s not found.' % firewall_policy)
+
+    load_balancer_id = None
+    if load_balancer:
+        load_balancer_id = _find_load_balancer(
+            oneandone_conn,
+            load_balancer)
+        if load_balancer_id is None:
+            module.fail_json(
+                msg='load balancer %s not found.' % load_balancer)
 
     if auto_increment:
         hostnames = _auto_increment_hostname(count, hostname)
@@ -424,6 +530,9 @@ def create_machine(module, oneandone_conn):
                 appliance_id=appliance_id,
                 ssh_key=ssh_key,
                 private_network_id=private_network_id,
+                monitoring_policy_id=monitoring_policy_id,
+                firewall_policy_id=firewall_policy_id,
+                load_balancer_id=load_balancer_id,
                 wait=wait,
                 wait_timeout=wait_timeout))
 
@@ -445,6 +554,8 @@ def remove_machine(module, oneandone_conn):
     removed machines's hostname and id.
     """
     instance_ids = module.params.get('instance_ids')
+    wait = module.params.get('wait')
+    wait_timeout = module.params.get('wait_timeout')
 
     if not isinstance(instance_ids, list) or len(instance_ids) < 1:
         module.fail_json(
@@ -458,6 +569,8 @@ def remove_machine(module, oneandone_conn):
 
         try:
             oneandone_conn.delete_server(server_id=machine['id'])
+            if wait:
+                _wait_for_machine_deletion_completion(oneandone_conn, machine, wait_timeout)
             removed_machines.append(machine)
         except Exception as e:
             module.fail_json(
@@ -583,29 +696,13 @@ def _auto_increment_description(count, description):
         return [description] * count
 
 
-def _validate_custom_hardware_params(module):
-    for param in ('vcore',
-                  'cores_per_processor',
-                  'ram',
-                  'hdds'):
-        if not module.params.get(param):
-            return False
-    return True
-
-
-def _validate_hardware_params(module):
-    if (bool(module.params.get('fixed_instance_size')) ^
-       bool(_validate_custom_hardware_params(module))):
-        return True
-    return False
-
-
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
             hostname=dict(type='str'),
             description=dict(type='str'),
             appliance=dict(type='str'),
@@ -622,10 +719,16 @@ def main():
                 choices=DATACENTERS,
                 default='US'),
             private_network=dict(type='str'),
+            firewall_policy=dict(type='str'),
+            load_balancer=dict(type='str'),
+            monitoring_policy=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             state=dict(type='str', default='present'),
-        )
+        ),
+        mutually_exclusive=(['fixed_instance_size', 'vcore'], ['fixed_instance_size', 'cores_per_processor'],
+                            ['fixed_instance_size', 'ram'], ['fixed_instance_size', 'hdds'],),
+        required_together=(['vcore', 'cores_per_processor', 'ram', 'hdds'],)
     )
 
     if not HAS_ONEANDONE_SDK:
@@ -654,12 +757,6 @@ def main():
             module.fail_json(msg=str(e))
 
     elif state == 'present':
-        if not _validate_hardware_params(module):
-            module.fail_json(
-                msg="Either 'fixed_size_instance' or custom hardware specs "
-                    "'vcore', 'cores_per_processor', 'ram', and 'hdds'"
-                    " must be provided (mutually exclusive).")
-
         for param in ('hostname',
                       'appliance',
                       'datacenter'):
@@ -674,6 +771,5 @@ def main():
     module.exit_json(changed=changed, machines=machines)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

@@ -25,23 +25,26 @@ DOCUMENTATION = '''
 module: oneandone_private_network
 short_description: Configure 1&1 private networking.
 description:
-     - Create, remove, reconfigure, update a private network
-       This module has a dependency on 1and1 >= 1.0
-version_added: "2.1"
+     - Create, remove, reconfigure, update a private network.
+version_added: "2.4"
 options:
   state:
     description:
-      - Define a network's state to create, remove, reconfigure, or update.
+      - Define a network's state to create, remove, or update.
     required: false
     default: 'present'
-    choices: [ "present", "absent", "reconfigure", "update" ]
+    choices: [ "present", "absent", "update" ]
   auth_token:
     description:
       - Authenticating API token provided by 1&1.
     required: true
+  private_network:
+    description:
+      - The identifier (id or name) of the network used with update state.
+    required: true
   name:
     description:
-      - The name or ID of the network.
+      - Private network name used with present state. Used as identifier (id or name) when used with absent state.
     required: true
   description:
     description:
@@ -54,18 +57,15 @@ options:
       - Set the netmask for the private network, i.e. 255.255.255.0
   add_members:
     description:
-      - Used when adding a member.
+      - List of server identifiers (name or id) to be added to the private network.
   remove_members:
     description:
-      - Used when removing a member.
+      - List of server identifiers (name or id) to be removed from the private network.
 
 requirements:
      - "1and1"
      - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''
@@ -75,9 +75,10 @@ EXAMPLES = '''
 - oneandone_private_network:
     auth_token: oneandone_private_api_key
     name: backup_network
+    description: Testing creation of a private network with ansible
+    network_address: 70.35.193.100
+    subnet_mask: 255.0.0.0
     datacenter: US
-    network_address: 192.168.1.0
-    subnet_mask: 255.255.255.0
 
 - oneandone_private_network:
     auth_token: oneandone_private_api_key
@@ -88,8 +89,8 @@ EXAMPLES = '''
 
 - oneandone_private_network:
     auth_token: oneandone_private_api_key
-    state: reconfigure
-    name: backup_network
+    state: update
+    private_network: backup_network
     network_address: 192.168.2.0
     subnet_mask: 255.255.255.0
 
@@ -98,16 +99,18 @@ EXAMPLES = '''
 - oneandone_private_network:
     auth_token: oneandone_private_api_key
     state: update
-    name: backup_network
-    add_members: host01
+    private_network: backup_network
+    add_members:
+     - server identifier (id or name)
 
 # Remove members from the private network.
 
 - oneandone_private_network:
     auth_token: oneandone_private_api_key
     state: update
-    name: backup_network
-    remove_members: host01
+    private_network: backup_network
+    remove_members:
+     - server identifier (id or name)
 
 '''
 
@@ -124,8 +127,9 @@ private_network:
     returned: always
 '''
 
-import os
 import time
+import os
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -158,7 +162,8 @@ def _find_private_network(oneandone_conn, private_network):
 
 
 def _wait_for_network_creation_completion(oneandone_conn,
-                                          network, wait_timeout):
+                                          network,
+                                          wait_timeout):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
         time.sleep(5)
@@ -183,6 +188,28 @@ def _wait_for_network_creation_completion(oneandone_conn,
         'Timed out waiting for network competion for %s' % network['id'])
 
 
+def _wait_for_network_deletion_completion(oneandone_conn,
+                                          network,
+                                          wait_timeout):
+    wait_timeout = time.time() + wait_timeout
+    while wait_timeout > time.time():
+        time.sleep(5)
+
+        # Refresh the operation info
+        logs = oneandone_conn.list_logs(q='DELETE',
+                                        period='LAST_HOUR',
+                                        sort='-start_date')
+
+        for log in logs:
+            if (log['resource']['id'] == network['id'] and
+                    log['action'] == 'DELETE' and
+                    log['type'] == 'PRIVATENETWORK' and
+                    log['status']['state'] == 'OK'):
+                return
+    raise Exception(
+        'Timed out waiting for network deletion for %s' % network['id'])
+
+
 def _find_machine(oneandone_conn, instance):
     """
     Validates that the machine exists whether by ID or name.
@@ -194,78 +221,27 @@ def _find_machine(oneandone_conn, instance):
 
 
 def _add_member(module, oneandone_conn, name, members):
-    """
-    """
-
     try:
-        o = oneandone_conn
+        conn = oneandone_conn
 
-        network = o.attach_private_network_servers(private_network_id=name,
-                                                   server_ids=members)
+        network = conn.attach_private_network_servers(private_network_id=name,
+                                                      server_ids=members)
 
         return network
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _remove_member(module, oneandone_conn, name, member_id):
-    """
-    """
-
     try:
-        o = oneandone_conn
+        conn = oneandone_conn
 
-        network = o.remove_private_network_server(private_network_id=name,
-                                                  server_id=member_id)
+        network = conn.remove_private_network_server(private_network_id=name,
+                                                     server_id=member_id)
 
         return network
-    except Exception as e:
-        module.fail_json(msg=str(e))
-
-
-def addremove_member(module, oneandone_conn):
-    """
-    Adds or removes a member from a private network
-
-    module : AnsibleModule object
-    oneandone_conn: authenticated oneandone object
-
-    Returns a dictionary containing a 'changed' attribute indicating whether
-    any member was added.
-    """
-    try:
-        name = module.params.get('name')
-        add_members = module.params.get('add_members')
-        remove_members = module.params.get('remove_members')
-        private_network = _find_private_network(oneandone_conn, name)
-        network = None
-
-        changed = False
-
-        if add_members:
-            instances = []
-
-            for member in add_members:
-                instance = _find_machine(oneandone_conn, member)
-                instance_obj = oneandone.client.AttachServer(server_id=instance['id'])
-
-                instances.extend([instance_obj])
-            network = _add_member(module, oneandone_conn, private_network['id'], instances)
-            changed = True if network else False
-
-        if remove_members:
-            for member in remove_members:
-                instance = _find_machine(oneandone_conn, member)
-                _remove_member(module,
-                               oneandone_conn,
-                               private_network['id'],
-                               instance['id'])
-            network = _find_private_network(oneandone_conn, name)
-            changed = True if network else False
-
-        return (changed, network)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def create_network(module, oneandone_conn):
@@ -313,8 +289,8 @@ def create_network(module, oneandone_conn):
         changed = True if network else False
 
         return (changed, network)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def update_network(module, oneandone_conn):
@@ -324,25 +300,51 @@ def update_network(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    _private_network_id = module.params.get('private_network_id')
+    _private_network_id = module.params.get('private_network')
     _name = module.params.get('name')
     _description = module.params.get('description')
     _network_address = module.params.get('network_address')
     _subnet_mask = module.params.get('subnet_mask')
+    _add_members = module.params.get('add_members')
+    _remove_members = module.params.get('remove_members')
 
     try:
-        network = oneandone_conn.modify_private_network(
-            private_network_id=_private_network_id,
-            name=_name,
-            description=_description,
-            network_address=_network_address,
-            subnet_mask=_subnet_mask)
+        network = _find_private_network(oneandone_conn,
+                                        _private_network_id)
+        updated_network = None
 
-        changed = True if network else False
+        if _name or _description or _network_address or _subnet_mask:
+            updated_network = oneandone_conn.modify_private_network(
+                private_network_id=network['id'],
+                name=_name,
+                description=_description,
+                network_address=_network_address,
+                subnet_mask=_subnet_mask)
 
-        return (changed, network)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+        if _add_members:
+            instances = []
+
+            for member in _add_members:
+                instance = _find_machine(oneandone_conn, member)
+                instance_obj = oneandone.client.AttachServer(server_id=instance['id'])
+
+                instances.extend([instance_obj])
+            updated_network = _add_member(module, oneandone_conn, network['id'], instances)
+
+        if _remove_members:
+            for member in _remove_members:
+                instance = _find_machine(oneandone_conn, member)
+                _remove_member(module,
+                               oneandone_conn,
+                               network['id'],
+                               instance['id'])
+            updated_network = _find_private_network(oneandone_conn, network['id'])
+
+        changed = True if updated_network else False
+
+        return (changed, updated_network)
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def remove_network(module, oneandone_conn):
@@ -353,9 +355,12 @@ def remove_network(module, oneandone_conn):
     oneandone_conn: authenticated oneandone object.
     """
     try:
-        name = module.params.get('name')
-        private_network = _find_private_network(oneandone_conn, name)
+        pn_id = module.params.get('name')
+        wait_timeout = module.params.get('wait_timeout')
+
+        private_network = _find_private_network(oneandone_conn, pn_id)
         private_network = oneandone_conn.delete_private_network(private_network['id'])
+        _wait_for_network_deletion_completion(oneandone_conn, private_network, wait_timeout)
 
         changed = True if private_network else False
 
@@ -363,8 +368,8 @@ def remove_network(module, oneandone_conn):
             'id': private_network['id'],
             'name': private_network['name']
         })
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def main():
@@ -372,7 +377,9 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
+            private_network_id=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),
             network_address=dict(type='str'),
@@ -402,34 +409,32 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required for deleting a network.")
         try:
             (changed, private_network) = remove_network(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
     elif state == 'update':
+        if not module.params.get('private_network'):
+            module.fail_json(
+                msg="'private_network' parameter is required for updating a network.")
         try:
             (changed, private_network) = update_network(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
-    elif state == 'add_remove_member':
-        try:
-            (changed, private_network) = addremove_member(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
-
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
     elif state == 'present':
-        for param in ('name',):
-            if not module.params.get(param):
-                module.fail_json(
-                    msg="%s parameter is required for new networks." % param)
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required for new networks.")
         try:
             (changed, private_network) = create_network(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     module.exit_json(changed=changed, private_network=private_network)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

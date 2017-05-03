@@ -25,8 +25,7 @@ DOCUMENTATION = '''
 module: oneandone_role
 short_description: Configure 1&1 roles.
 description:
-     - Create, remove, update a role
-       This module has a dependency on 1and1 >= 1.0
+     - Create, remove, and update a role.
 version_added: "2.1"
 options:
   state:
@@ -41,29 +40,70 @@ options:
     required: true
   name:
     description:
-      - Role name.
+      - Role name used with present state. Used as identifier (id or name) when used with absent state.
     maxLength: 128
+    required: true
+  role:
+    description:
+      - The identifier (id or name) of the role - used with update state.
     required: true
   description:
     description:
       - Role description.
     required: false
-  state:
+  role_state:
     description:
       - Allows to enable or disable the role
     required: false
+    choices: [ "ACTIVE", "DISABLE" ]
+notes:
+  - Permissions are added to the role separately for each resource by setting a boolean value for each action
+  - servers
+      (show, create, delete, set_name, set_description, start, restart, shutdown,
+      resize, reinstall, clone, manage_snapshot, assign_ip, manage_dvd, access_kvm_console)
+  - images
+      (show, create, delete, set_name, set_description, disable_automatic_creation)
+  - shared_storages
+      (show, create, delete, set_name, set_description, manage_attached_servers, access, resize)
+  - firewalls
+      (show, create, delete, set_name, set_description, manage_rules, manage_attached_server_ips, clone)
+  - load_balancers
+      (show, create, delete, set_name, set_description, manage_rules, manage_attached_server_ips, modify)
+  - ips
+      (show, create, delete, release, set_reverse_dns)
+  - private_networks
+      (show, create, delete, set_name, set_description, set_network_info, manage_attached_servers)
+  - vpns
+      (show, create, delete, set_name, set_description, download_file)
+  - monitoring_centers
+      (show)
+  - monitoring_policies
+      (show, create, delete, set_name, set_description, set_email, modify_resources, manage_ports,
+      manage_processes, manage_attached_servers, clone)
+  - backups
+      (show, create, delete)
+  - logs
+      (show)
+  - users
+      (show, create, delete, set_description, set_email, set_password, manage_api, enable,
+      disable, change_role)
+  - roles
+      (show, create, delete, set_name, set_description, manage_users, modify, clone)
+  - usages
+      (show)
+  - interactive_invoices
+      (show)
 
 requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 import os
 import time
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -99,8 +139,7 @@ def _wait_for_role_creation_completion(oneandone_conn, role, wait_timeout):
         elif role['state'].lower() == 'failed':
             raise Exception('User creation ' +
                             ' failed for %s' % role['id'])
-        elif role['state'].lower() in ('active',
-                                       'enabled',
+        elif role['state'].lower() in ('enabled',
                                        'deploying',
                                        'configuring'):
             continue
@@ -131,8 +170,8 @@ def _modify_role_permissions(module, oneandone_conn, role_id,
                                                  interactive_invoices=interactive_invoices)
 
         return role
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _add_users_to_role(module, oneandone_conn, role_id, users):
@@ -141,8 +180,8 @@ def _add_users_to_role(module, oneandone_conn, role_id, users):
                                         users=users)
 
         return role
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _remove_users_from_role(module, oneandone_conn, role_id, users):
@@ -153,8 +192,8 @@ def _remove_users_from_role(module, oneandone_conn, role_id, users):
                                               user_id=user_id)
 
         return role
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _clone_role(module, oneandone_conn, role_id, name):
@@ -163,8 +202,8 @@ def _clone_role(module, oneandone_conn, role_id, name):
                                          name=name)
 
         return role
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def update_role(module, oneandone_conn):
@@ -174,7 +213,7 @@ def update_role(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    role_id = module.params.get('role')
+    _role_id = module.params.get('role')
     _name = module.params.get('name')
     _description = module.params.get('description')
     _state = module.params.get('state')
@@ -202,7 +241,7 @@ def update_role(module, oneandone_conn):
 
     changed = False
 
-    role = _find_role(oneandone_conn, role_id)
+    role = _find_role(oneandone_conn, _role_id)
 
     try:
         if _name or _description or _state:
@@ -264,8 +303,8 @@ def update_role(module, oneandone_conn):
                 oneandone_conn, role, wait_timeout)
 
         return (changed, role)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def should_update_permissions(servers, images, shared_storages, firewalls,
@@ -278,10 +317,7 @@ def should_update_permissions(servers, images, shared_storages, firewalls,
     args = [servers, images, shared_storages, firewalls, load_balancers, ips, private_networks, vpns,
             monitoring_centers, monitoring_policies, backups, logs, users, roles, usages, interactive_invoices]
 
-    if args.any():
-        return True
-    else:
-        return False
+    return args.any()
 
 
 def create_role(module, oneandone_conn):
@@ -305,8 +341,8 @@ def create_role(module, oneandone_conn):
         changed = True if role else False
 
         return (changed, role)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def remove_role(module, oneandone_conn):
@@ -316,8 +352,8 @@ def remove_role(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
-    role_id = module.params.get('role')
-    _role = _find_role(oneandone_conn, role_id)
+    _role_id = module.params.get('name')
+    _role = _find_role(oneandone_conn, _role_id)
 
     try:
         role = oneandone_conn.delete_role(_role['id'])
@@ -328,8 +364,8 @@ def remove_role(module, oneandone_conn):
             'id': role['id'],
             'name': role['name']
         })
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def main():
@@ -337,12 +373,13 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
             name=dict(type='str'),
             description=dict(type='str'),
             role_state=dict(
                 choices=ROLE_STATES),
-            role=dict(type='str'),
+            role_id=dict(type='str'),
             servers=dict(type='str'),
             images=dict(type='str'),
             shared_storages=dict(type='str'),
@@ -383,15 +420,21 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required to delete a role.")
         try:
             (changed, role) = remove_role(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
     elif state == 'update':
+        if not module.params.get('role'):
+            module.fail_json(
+                msg="'role' parameter is required to update a role.")
         try:
             (changed, role) = update_role(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     elif state == 'present':
         if not module.params.get('name'):
@@ -399,12 +442,11 @@ def main():
                 msg="'name' parameter is required for new roles.")
         try:
             (changed, role) = create_role(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     module.exit_json(changed=changed, role=role)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,115 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Create a firewall policy
+      oneandone_firewall_policy:
+	name: ansible firewall policy
+	description: Testing creation of firewall policies with ansible
+	rules:
+	 -
+	   protocol: TCP
+	   port_from: 80
+	   port_to: 80
+	   source: 0.0.0.0
+	wait: true
+	wait_timeout: 500
+      register: fw_policy
+
+    - name: Create a monitoring policy
+      oneandone_monitoring_policy:
+	name: ansible monitoring policy
+	description: Testing creation of a monitoring policy with ansible
+	email: your@emailaddress.com
+	agent: true
+	thresholds:
+	 - 
+	   cpu:
+	     warning:
+	       value: 80
+	       alert: false
+	     critical:
+	       value: 92
+	       alert: false
+	 - 
+	   ram:
+	     warning:
+	       value: 80
+	       alert: false
+	     critical:
+	       value: 90
+	       alert: false
+	 - 
+	   disk:
+	     warning:
+	       value: 80
+	       alert: false
+	     critical:
+	       value: 90
+	       alert: false
+	 - 
+	   internal_ping:
+	     warning:
+	       value: 50
+	       alert: false
+	     critical:
+	       value: 100
+	       alert: false
+	 - 
+	   transfer:
+	     warning:
+	       value: 1000
+	       alert: false
+	     critical:
+	       value: 2000
+	       alert: false
+	ports:
+	 -
+	   protocol: TCP
+	   port: 22
+	   alert_if: RESPONDING
+	   email_notification: false
+	processes:
+	 -
+	   process: test
+	   alert_if: NOT_RUNNING
+	   email_notification: false
+	wait: true
+      register: mp
+
+    - name: Create server using custom hardware
+      oneandone_server:    
+	hostname: server_custom_size
+	description: testing server creation with ansible
+	auto_increment: true
+	appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
+	vcore: 2
+	cores_per_processor: 1
+	ram: 1
+	hdds:
+	 -
+	   is_main: true
+	   size: 20
+	 -
+	   is_main: false
+	   size: 20
+	datacenter: US
+	firewall_policy: "{{ fw_policy.firewall_policy.name }}"
+	private_network: backup_network
+	monitoring_policy: "{{ mp.monitoring_policy.name }}"
+	state: present
+
+    - name: Create server using a fixed instance size 
+      oneandone_server:    
+	hostname: server_fixed_size
+	description: testing server creation with ansible
+	auto_increment: true
+	appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
+	fixed_instance_size: S
+	datacenter: US
+	firewall_policy: "{{ fw_policy.firewall_policy.name }}"
+	private_network: backup_network
+	monitoring_policy: "{{ mp.monitoring_policy.name }}"
+	state: present

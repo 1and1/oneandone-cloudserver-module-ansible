@@ -5,7 +5,7 @@
 
   tasks:
     - name: Remove a server
-      oneandone:
+      oneandone_server:
         instance_ids:
-          - server01
+          - server_id
         state: absent

@@ -25,17 +25,20 @@ DOCUMENTATION = '''
 module: oneandone_load_balancer
 short_description: Configure 1&1 load balancer.
 description:
-     - Create, remove, update load balancers
-       This module has a dependency on 1and1 >= 1.0
-version_added: "2.1"
+     - Create, remove, update load balancers.
+version_added: "2.4"
 options:
   auth_token:
     description:
       - Authenticating API token provided by 1&1.
     required: true
+  load_balancer:
+    description:
+      - The identifier (id or name) of the load balancer used with update state.
+    required: true
   name:
     description:
-      - Load balancer name.
+      - Load balancer name used with present state. Used as identifier (id or name) when used with absent state.
     required: true
     maxLength: 128
   health_check_test:
@@ -82,11 +85,16 @@ options:
     default: US
     choices: [ "US", "ES", "DE", "GB" ]
     required: false
+  rules:
+    description:
+      - A list of rule objects that will be set for the load balancer. Each rule must contain protocol,
+        port_balancer, and port_server parameters, in addition to source parameter, which is optional.
+    required: true
   protocol:
     description:
       - Internet protocol
-      choices: [ "TCP", "UDP" ]
-      required: true
+    choices: [ "TCP", "UDP" ]
+    required: true
   port_balancer:
     description:
       - Port in balancer. Port 0 means every port.
@@ -111,18 +119,135 @@ options:
       - Description of the load balancer.
     maxLength: 256
     required: false
+  add_server_ips:
+    description:
+      - A list of server identifiers (id or name) to be assigned to a load balancer.
+        Used in combination with update state.
+    required: false
+  remove_server_ips:
+    description:
+      - A list of server IP ids to be unassigned from a load balancer. Used in combination with update state.
+    required: false
+  add_rules:
+    description:
+      - A list of rules that will be added to an existing load balancer.
+        It is syntax is the same as the one used for rules parameter. Used in combination with update state.
+    required: false
+  remove_rules:
+    description:
+      - A list of rule ids that will be removed from an existing load balancer. Used in combination with update state.
+    required: false
 
 requirements:
      - "1and1"
      - "python >= 2.6"
-
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
-import os
+EXAMPLES = '''
+
+# Provisioning example. Create and destroy a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    name: ansible load balancer
+    description: Testing creation of load balancer with ansible
+    health_check_test: TCP
+    health_check_interval: 40
+    persistence: true
+    persistence_time: 1200
+    method: ROUND_ROBIN
+    datacenter: US
+    rules:
+     -
+       protocol: TCP
+       port_balancer: 80
+       port_server: 80
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    name: ansible load balancer
+    wait: true
+    wait_timeout: 500
+    state: absent
+
+# Update a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer
+    name: ansible load balancer updated
+    description: Testing the update of a load balancer with ansible
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Add server to a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding server to a load balancer with ansible
+    add_server_ips:
+     - server identifier (id or name)
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Remove server from a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Removing server from a load balancer with ansible
+    remove_server_ips:
+     - B2504878540DBC5F7634EB00A07C1EBD (server's ip id)
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Add rules to a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding rules to a load balancer with ansible
+    add_rules:
+     -
+       protocol: TCP
+       port_balancer: 70
+       port_server: 70
+       source: 0.0.0.0
+     -
+       protocol: TCP
+       port_balancer: 60
+       port_server: 60
+       source: 0.0.0.0
+    wait: true
+    wait_timeout: 500
+    state: update
+
+# Remove rules from a load balancer.
+
+- oneandone_load_balancer:
+    auth_token: oneandone_private_api_key
+    load_balancer: ansible load balancer updated
+    description: Adding rules to a load balancer with ansible
+    remove_rules:
+     - rule_id #1
+     - rule_id #2
+     - ...
+    wait: true
+    wait_timeout: 500
+    state: update
+'''
+
 import time
+import os
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -149,8 +274,7 @@ def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, w
         elif load_balancer['state'].lower() == 'failed':
             raise Exception('Load balancer creation ' +
                             ' failed for %s' % load_balancer['id'])
-        elif load_balancer['state'].lower() in ('active',
-                                                'enabled',
+        elif load_balancer['state'].lower() in ('enabled',
                                                 'deploying',
                                                 'configuring'):
             continue
@@ -160,6 +284,16 @@ def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, w
 
     raise Exception(
         'Timed out waiting for load balancer competion for %s' % load_balancer['id'])
+
+
+def _find_machine(oneandone_conn, instance):
+    """
+    Validates that the machine exists whether by ID or name.
+    Returns the machine if one was found.
+    """
+    for _machine in oneandone_conn.list_servers(per_page=1000):
+        if instance in (_machine['id'], _machine['name']):
+            return _machine
 
 
 def _find_load_balancer(oneandone_conn, load_balancer):
@@ -184,16 +318,18 @@ def _find_datacenter(oneandone_conn, datacenter):
             return _datacenter['id']
 
 
-def _add_server_ips(module, oneandone_conn, load_balancer_id, server_ips):
+def _add_server_ips(module, oneandone_conn, load_balancer_id, server_ids):
     """
     Assigns servers to a load balancer.
     """
     try:
         attach_servers = []
 
-        for server_ip in server_ips:
+        for server_id in server_ids:
+            server = _find_machine(oneandone_conn, server_id)
             attach_server = oneandone.client.AttachServer(
-                server_ip_id=server_ip
+                server_id=server['id'],
+                server_ip_id=next(iter(server['ips'] or []), None)['id']
             )
             attach_servers.append(attach_server)
 
@@ -201,8 +337,8 @@ def _add_server_ips(module, oneandone_conn, load_balancer_id, server_ips):
             load_balancer_id=load_balancer_id,
             server_ips=attach_servers)
         return load_balancer
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _remove_load_balancer_server(module, oneandone_conn, load_balancer_id, server_ip_id):
@@ -214,8 +350,8 @@ def _remove_load_balancer_server(module, oneandone_conn, load_balancer_id, serve
             load_balancer_id=load_balancer_id,
             server_ip_id=server_ip_id)
         return load_balancer
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _add_load_balancer_rules(module, oneandone_conn, load_balancer_id, rules):
@@ -239,8 +375,8 @@ def _add_load_balancer_rules(module, oneandone_conn, load_balancer_id, rules):
         )
 
         return load_balancer
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def _remove_load_balancer_rule(module, oneandone_conn, load_balancer_id, rule_id):
@@ -253,8 +389,8 @@ def _remove_load_balancer_rule(module, oneandone_conn, load_balancer_id, rule_id
             rule_id=rule_id
         )
         return load_balancer
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def update_load_balancer(module, oneandone_conn):
@@ -268,6 +404,7 @@ def update_load_balancer(module, oneandone_conn):
     module : AnsibleModule object
     oneandone_conn: authenticated oneandone object
     """
+    load_balancer_id = module.params.get('load_balancer')
     name = module.params.get('name')
     description = module.params.get('description')
     health_check_test = module.params.get('health_check_test')
@@ -284,10 +421,10 @@ def update_load_balancer(module, oneandone_conn):
 
     changed = False
 
-    load_balancer = _find_load_balancer(oneandone_conn, name)
+    load_balancer = _find_load_balancer(oneandone_conn, load_balancer_id)
 
-    if (name or description or health_check_test or health_check_interval or health_check_path
-            or health_check_parse or persistence or persistence_time or method):
+    if (name or description or health_check_test or health_check_interval or health_check_path or
+            health_check_parse or persistence or persistence_time or method):
         load_balancer = oneandone_conn.modify_load_balancer(
             load_balancer_id=load_balancer['id'],
             name=name,
@@ -332,8 +469,8 @@ def update_load_balancer(module, oneandone_conn):
 
     try:
         return (changed, load_balancer)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def create_load_balancer(module, oneandone_conn):
@@ -360,6 +497,7 @@ def create_load_balancer(module, oneandone_conn):
 
         load_balancer_rules = []
 
+        datacenter_id = None
         if datacenter is not None:
             datacenter_id = _find_datacenter(oneandone_conn, datacenter)
             if datacenter_id is None:
@@ -399,8 +537,8 @@ def create_load_balancer(module, oneandone_conn):
         changed = True if load_balancer else False
 
         return (changed, load_balancer)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def remove_load_balancer(module, oneandone_conn):
@@ -411,8 +549,8 @@ def remove_load_balancer(module, oneandone_conn):
     oneandone_conn: authenticated oneandone object
     """
     try:
-        name = module.params.get('name')
-        load_balancer = _find_load_balancer(oneandone_conn, name)
+        lb_id = module.params.get('name')
+        load_balancer = _find_load_balancer(oneandone_conn, lb_id)
         load_balancer = oneandone_conn.delete_load_balancer(load_balancer['id'])
 
         changed = True if load_balancer else False
@@ -421,8 +559,8 @@ def remove_load_balancer(module, oneandone_conn):
             'id': load_balancer['id'],
             'name': load_balancer['name']
         })
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def main():
@@ -430,7 +568,9 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
+            load_balancer_id=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),
             health_check_test=dict(
@@ -470,29 +610,35 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('name'):
+            module.fail_json(
+                msg="'name' parameter is required for deleting a load balancer.")
         try:
             (changed, load_balancer) = remove_load_balancer(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
     elif state == 'update':
+        if not module.params.get('load_balancer'):
+            module.fail_json(
+                msg="'load_balancer' parameter is required for updating a load balancer.")
         try:
             (changed, load_balancer) = update_load_balancer(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     elif state == 'present':
-        for param in ('name', 'health_check_test', 'health_check_interval', 'persistence', 'persistence_time', 'method'):
+        for param in ('name', 'health_check_test', 'health_check_interval', 'persistence',
+                      'persistence_time', 'method', 'rules'):
             if not module.params.get(param):
                 module.fail_json(
-                    msg="%s parameter is required for new networks." % param)
+                    msg="%s parameter is required for new load balancers." % param)
         try:
             (changed, load_balancer) = create_load_balancer(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     module.exit_json(changed=changed, load_balancer=load_balancer)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

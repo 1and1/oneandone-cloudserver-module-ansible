@@ -4,9 +4,10 @@
   gather_facts: True
 
   tasks:
-    - name: Add server to a firewall policy
-      oneandone_firewall_policy:
-        firewall_policy: ansible-firewall-policy-updated
+    - name: Update a load balancer
+      oneandone_load_balancer:
+        load_balancer: ansible load balancer updated
+        description: Adding server to a load balancer with ansible
         add_server_ips:
          - server_id
         wait: true

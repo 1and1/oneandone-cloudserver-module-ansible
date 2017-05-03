@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Delete an existing processes of a monitoring policy
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        remove_processes:
+         - process_id
+        wait: true
+        state: update

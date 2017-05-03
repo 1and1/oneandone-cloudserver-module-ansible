@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Update a firewall policy
+      oneandone_firewall_policy:
+        firewall_policy: ansible-firewall-policy
+        name: ansible-firewall-policy-updated
+        description: Testing creation of firewall policies with ansible - updated
+        wait_timeout: 500
+        state: update
+

@@ -16,7 +16,7 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
     * [Incrementing Servers](#incrementing-servers)
     * [SSH Key Authentication](#ssh-key-authentication)
 * [Reference](#reference)
-    * [oneandone](#oneandone)
+    * [oneandone_server](#oneandone_server)
     * [oneandone\_firewall\_policy](#oneandone_firewall_policy)
     * [oneandone\_load\_balancer](#oneandone_load_balancer)
     * [oneandone\_monitoring\_policy](#oneandone_monitoring_policy)
@@ -124,7 +124,7 @@ Ansible uses YAML manifest files called Playbooks. The Playbook will describe th
     
       tasks:
         - name: Provision a set of servers
-          oneandone:
+          oneandone_server:
               auth_token: {your_api_key}          
               hostname: server%02d
               auto_increment: true
@@ -176,7 +176,7 @@ The **auto_increment** parameter can be set to `false` to disable this feature a
 
 ## Reference
 
-### oneandone
+### oneandone_server
 
 #### Example Syntax
 
@@ -187,7 +187,7 @@ The **auto_increment** parameter can be set to `false` to disable this feature a
     
       tasks:
         - name: Provision a set of servers
-          oneandone:
+          oneandone_server:
             auth_token: {your_api_key}       
             hostname: server%02d
             auto_increment: true
@@ -204,18 +204,28 @@ The following parameters are supported:
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | hostname | **yes** | string | none | The name of the server(s). |
-| description | no | string | none | The description of the server(s). |
-| fixed_instance_size | **yes** | string | none | Size of the ID desired for the server. ('S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL') |
+| fixed_instance_size | **yes** * | string | none | Size of the ID desired for the server. ('S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL') |
+| vcore | **yes** * | int | none | The total number of processors. |
+| cores_per_processor | **yes** * | int | none | The number of cores per processor. |
+| ram | **yes** * | float | none | The amount of RAM memory. |
+| hdds | **yes** * | array | none | A list of hard disk objects with nested `size` and `is_main` properties. |
+| size | **yes** | integer | none | Size of the hard disk. |
+| is_main | **yes** | boolean | none | Set true if it's main. |
 | appliance | **yes** | string | none | Name or ID of the image that will be installed on server |
+| description | no | string | none | The description of the server(s). |
 | datacenter | no | string | none | ID of the datacenter where the server will be created. ('US', 'ES', 'DE', 'GB') |
 | private_network | no | string | none | Name or ID of the private network to connect the server. |
+| firewall_policy | no | string | none | Firewall policy's ID or name. If it is not provided, the server will assign the best firewall policy, creating a new one if necessary. If the parameter is sent with a 0 value, the server will be created with all ports blocked. |
+| load_balancer | no | string | none | Name or ID of the load balancer to assign the server. |
+| monitoring_policy | no | string | none | Name or ID of the monitoring policy to assign the server. |
 | ssh_key | no | string | none | Put a valid public SSH Key to be copied into the server during creation. Then you will be able to access to the server using your SSH keys. |
 | auto_increment | no | boolean | True | Whether or not to increment created servers. |
 | count | no | integer | 1 | The number of servers to create. |
-| ssh_keys | no | list | none | List of public SSH keys allowing access to the server. |
-| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
+| wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. </br>Also used for delete operation (set to 'false' if you don't want to wait for each individual server to be deleted before moving on with other tasks.) |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create or terminate instances: **present**, absent, running, stopped |
+
+** * ** - The server can be created using pre-defined instance sizes or by providing your own custom hardware values. If custom values are provided, then all four items must be provided (`vcore`, `cores_per_processor`, `ram`, and `hdds`).
 
 ### oneandone_firewall_policy
 
@@ -248,7 +258,8 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | Firewall policy name. |
+| name | **yes** | string | none | Firewall policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| firewall_policy | **yes** * | string | none | Firewall policy identifier (id or name). Must be provided with `update` state. |
 | rules | **yes** | array | none | A list of rules that will be set for the firewall policy. Each rule must contain **`protocol`** parameter, in addition to three optional parameters: `port_from`, `port_to`, and `source` |
 | protocol | **yes** | string | none | Internet protocol ('TCP', 'UDP', 'ICMP', 'AH', 'ESP', 'GRE') |
 | port_from | no | integer | none | First port in range. Required for UDP and TCP protocols, otherwise it will be set up automatically. |
@@ -257,7 +268,7 @@ The following parameters are supported:
 | add_rules | no | array | none | A list of rules that will be added to an existing firewall policy. It's syntax is the same as the one used for `rules` parameter. Used in combination with **`update`** state. |
 | remove_rules | no | array | none | A list of rule ids that will be removed from an existing firewall policy. Used in combination with **`update`** state. |
 | add_server_ips | no | array | none | A list of servers/IPs to be assigned  to a firewall policy. Used in combination with **`update`** state. |
-| remove_server_ips | no | array | none | A list of servers/IPs to be unassigned  from a firewall policy. Used in combination with **`update`** state. |
+| remove_server_ips | no | array | none | A list of server IP ids to be unassigned  from a firewall policy. Used in combination with **`update`** state. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a firewall policy: **present**, absent, update |
@@ -299,7 +310,8 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | Load balancer name. |
+| name | **yes** | string | none | Load balancer name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| load_balancer | **yes** * | string | none | Load balancer identifier (id or name). Must be provided with `update` state. |
 | health_check_test | **yes** | string | none | Type of the health check. At the moment, HTTP is not allowed. ('NONE', 'TCP', 'HTTP', 'ICMP') |
 | health_check_interval | **yes** | integer | none | Health check period in seconds (5 - 300) |
 | persistence | **yes** | boolean | none | Persistence |
@@ -400,7 +412,8 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | Monitoring policy name. |
+| name | **yes** | string | none | Monitoring policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| monitoring_policy | **yes** * | string | none | Monitoring policy identifier (id or name). Must be provided with `update` state. |
 | agent | **yes** | string | none | Set true for using agent. |
 | email | **yes** | string | none | User's email. |
 | thresholds | **yes** | array | none | A list of five threshold objects that must be provided to be set for the monitoring policy (**`cpu`**, **`ram`**, **`disk`**, **`internal_ping`**, and **`transfer`**). Each of those five threshold objects must contain **`warning`** and **`critical`** objects, each of which must contain **`alert`** and **`value`** parameters.  |
@@ -458,7 +471,7 @@ The following parameters are supported:
         - name: Update a private network
           oneandone_private_network:
             auth_token: {your_api_key}
-            name: ansible_private_network
+            private_network: ansible_private_network
             description: Testing the update of a private network with ansible
             network_address: 192.168.1.1
             subnet_mask: 255.255.255.0
@@ -469,12 +482,12 @@ The following parameters are supported:
         - name: Attach servers to a private network
           oneandone_private_network:
             auth_token: {your_api_key}
-            name: ansible_private_network
+            private_network: ansible_private_network
             add_members:
              - E7D36EC025C73796035BF4F171379025
              - 8A7D5122BDC173B6E52223878CEF2748
              - D5C5C1D01249DE9B88BE3DAE973AA090
-            state: add_remove_member
+            state: update
             wait: false
 
 #### Parameter Reference
@@ -484,7 +497,8 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | Private network name. |
+| name | **yes** | string | none | Private network name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| private_network | **yes** * | string | none | Private network identifier (id or name). Must be provided with `update` state. |
 | description | no | string | none | Private network description. |
 | datacenter | no | string | none | ID of the datacenter where the private network will be created. ('US', 'ES', 'DE', 'GB') |
 | network_address | no | string | none | Private network address (valid IP). |
@@ -493,7 +507,7 @@ The following parameters are supported:
 | remove_members | no | string | none | Array of desired servers ids to be detached from a private network.|
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
-| state | no | string | present | Create, delete, update a private network, attach/detach servers to/from a private network: **present**, absent, update, add_remove_member |
+| state | no | string | present | Create, delete, update a private network, attach/detach servers to/from a private network: **present**, absent, update |
 
 ### oneandone_public_ip
 
@@ -520,6 +534,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| public_ip_id | **yes** * | string | none | ID or of the public IP that will be used in update or delete requests. Required for `absent` and `update` states. |
 | datacenter | no | string | 'US' | ID of the datacenter where the IP will be created (only for unassigned IPs). ('US', 'ES', 'DE', 'GB') |
 | reverse_dns | no | string | none | Reverse DNS name. |
 | type | no | string | 'IPV4' | Type of IP. Currently, only IPV4 is supported. ('IPV4', 'IPV6') |
@@ -553,10 +568,10 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | VPN name. |
+| name | **yes** | string | none | VPN name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| vpn | **yes** * | string | none | VPN identifier (id or name). Must be provided with `update` state. |
 | description | no | string | none | VPN description. |
 | datacenter | no | string | none | ID of the datacenter where the VPN will be created. |
-| vpn | no | string | none | ID or the name of the VPN that will be used in update or delete requests. **Required for `absent` and `update` states**. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
@@ -588,9 +603,10 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | User's name. |
-| description | no | string | none | User's description. |
+| name | **yes** | string | none | User's name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| user | **yes** * | string | none | User identifier (id or name). Must be provided with `update` state. |
 | password | **yes** | string | none | User's password. Pass must contain at least 8 characters using uppercase letters, numbers and other special symbols. |
+| description | no | string | none | User's description. |
 | email | no | string | none | User's e-mail. |
 | user_state | no | string | none | Allows to enable or disable users. ('ACTIVE', 'DISABLE') |
 | active | no | boolean | false | Set true for enabling API |
@@ -625,10 +641,10 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
-| name | **yes** | string | none | Role name. |
+| name | **yes** | string | none | Role name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
+| role | **yes** * | string | none | Role identifier (id or name). Must be provided with `update` state. |
 | description | no | string | none | Role description. |
 | role_state | no | string | none | Allows to enable or disable the role. ('ACTIVE', 'DISABLE') |
-| role | no | string | none | ID or the name of the role that will be used in update or delete requests. **Required for `absent` and `update` states**. |
 | servers | no | object | none | Servers permissions object attributes (boolean values)</br> `show`- Allows to list servers. </br> `create`- Allows to create servers. </br> `delete`- Allows to delete servers. </br> `set_name`- Allows to change server name. </br> `set_description`- Allows to change server description. </br> `start`- Allows to start servers. </br> `restart`- Allows to restart servers. </br> `shutdown`- Allows to shutdown servers. </br> `resize`- Allows to resize servers. </br> `reinstall`- Allows to reinstall servers. </br> `clone`- Allows to clone servers. </br> `manage_snapshot`- Allows to manage snapshots. </br> `assign_ip`- Allows to assign new IPs </br> `manage_dvd`- Allows to manage DVD images. </br> `access_kvm_console`- Allows to access servers using KVM console. |
 | images | no | object | none | Images permissions object attributes (boolean values)</br> `show`- Allows to list images. </br> `create`- Allows to create images. </br> `delete`- Allows to delete images. </br> `set_name`- Allows to change image name. </br> `set_description`- Allows to change image description. </br> `disable_automatic_creation`- Allows to change image creation policy. |
 | shared_storages | no | object | none | Shared storages permissions object attributes (boolean values)</br> `show`- Allows to list shared storages. </br> `create`- Allows to create shared storages. </br> `delete`- Allows to delete shared storages. </br> `set_name`- Allows to change shared storage name. </br> `set_description`- Allows to change shared storage description. </br> `manage_attached_servers`- Allows to manage servers attached. </br> `access`- Allows to manage shared storage permissions. </br> `resize`- Allows to resize shared storages. |
@@ -652,26 +668,146 @@ The following parameters are supported:
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
 
+## Examples
+
+The following example demonstrates creating a firewall policy, monitoring policy, two servers (one using fixed_size_instance, the other custom hardware) with the associated policies applied, and both added to a private network:
+
+	---
+	- hosts: localhost
+	  connection: local
+	  gather_facts: True
+
+	  tasks:
+	    - name: Create a firewall policy
+	      oneandone_firewall_policy:
+		name: ansible firewall policy
+		description: Testing creation of firewall policies with ansible
+		rules:
+		 -
+		   protocol: TCP
+		   port_from: 80
+		   port_to: 80
+		   source: 0.0.0.0
+		wait: true
+		wait_timeout: 500
+	      register: fw_policy
+
+	    - name: Create a monitoring policy
+	      oneandone_monitoring_policy:
+		name: ansible monitoring policy
+		description: Testing creation of a monitoring policy with ansible
+		email: amel@stackpointcloud.com
+		agent: true
+		thresholds:
+		 -
+		   cpu:
+		     warning:
+		       value: 80
+		       alert: false
+		     critical:
+		       value: 92
+		       alert: false
+		 -
+		   ram:
+		     warning:
+		       value: 80
+		       alert: false
+		     critical:
+		       value: 90
+		       alert: false
+		 -
+		   disk:
+		     warning:
+		       value: 80
+		       alert: false
+		     critical:
+		       value: 90
+		       alert: false
+		 -
+		   internal_ping:
+		     warning:
+		       value: 50
+		       alert: false
+		     critical:
+		       value: 100
+		       alert: false
+		 -
+		   transfer:
+		     warning:
+		       value: 1000
+		       alert: false
+		     critical:
+		       value: 2000
+		       alert: false
+		ports:
+		 -
+		   protocol: TCP
+		   port: 22
+		   alert_if: RESPONDING
+		   email_notification: false
+		processes:
+		 -
+		   process: test
+		   alert_if: NOT_RUNNING
+		   email_notification: false
+		wait: true
+	      register: mp
+
+	    - name: Create server using custom hardware
+	      oneandone_server:
+		hostname: server_custom_size
+		description: testing server creation with ansible
+		auto_increment: true
+		appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
+		vcore: 2
+		cores_per_processor: 1
+		ram: 1
+		hdds:
+		 -
+		   is_main: true
+		   size: 20
+		 -
+		   is_main: false
+		   size: 20
+		datacenter: US
+		firewall_policy: "{{ fw_policy.firewall_policy.name }}"
+		private_network: backup_network
+		monitoring_policy: "{{ mp.monitoring_policy.name }}"
+		state: present
+
+	    - name: Create server using a fixed instance size
+	      oneandone_server:
+		hostname: server_fixed_size
+		description: testing server creation with ansible
+		auto_increment: true
+		appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
+		fixed_instance_size: S
+		datacenter: US
+		firewall_policy: "{{ fw_policy.firewall_policy.name }}"
+		private_network: backup_network
+		monitoring_policy: "{{ mp.monitoring_policy.name }}"
+		state: present
+
+
 ## Support
 
 You are welcome to contact us with questions or comments using the **Community** section of the [1&1 Cloud Community](https://www.1and1.com/cloud-community). Please report any feature requests or issues using GitHub issue tracker.
 
 * [1&1 Cloud Server API](https://cloudpanel-api.1and1.com/documentation/v1/en/documentation.html) documentation.
 * Ask a question or discuss at [1&1 Cloud Community](https://www.1and1.com/cloud-community).
-* Report an [issue here](https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/issues).
-* More examples are located in the [GitHub repository](https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/tree/master/tests) `tests` directory.
+* Report an [issue here](https://github.com/1and1/oneandone-cloudserver-module-ansible/issues).
+* More examples are located in the [GitHub repository](https://github.com/1and1/oneandone-cloudserver-module-ansible/tree/master/examples) `examples` directory.
 
 ## Testing
 
+Change into the `examples` directory and execute the Playbooks.
 
-Change into the `tests` directory and execute the Playbooks.
-
-    cd tests
-    ansible-playbook server.yml
+    cd examples
+    ansible-playbook server_create.yml
 
 ## Contributing
 
-1. Fork the repository ([https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/fork](https://github.com/StackPointCloud/oneandone-cloudserver-module-ansible/fork))
+1. Fork the repository ([https://github.com/1and1/oneandone-cloudserver-module-ansible/fork](https://github.com/1and1/oneandone-cloudserver-module-ansible/fork))
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)

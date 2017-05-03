@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Update monitoring policy ports
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        update_ports:
+         -
+           id: port_id
+           protocol: TCP
+           port: 34
+           alert_if: RESPONDING
+           email_notification: false
+         -
+           id: port_id
+           protocol: TCP
+           port: 23
+           alert_if: RESPONDING
+           email_notification: false
+        wait: true
+        state: update

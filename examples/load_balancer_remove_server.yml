@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Update a load balancer remove server ips
+      oneandone_load_balancer:
+        load_balancer: ansible load balancer updated
+        description: Removing server from a load balancer with ansible
+        remove_server_ips:
+         - server_ip_id
+        wait: true
+        wait_timeout: 500
+        state: update

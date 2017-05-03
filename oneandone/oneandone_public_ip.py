@@ -25,9 +25,8 @@ DOCUMENTATION = '''
 module: oneandone_public_ip
 short_description: Configure 1&1 public IPs.
 description:
-     - List, create, update, remove private networks
-       This module has a dependency on 1and1 >= 1.0
-version_added: "2.1"
+     - Create, update, and remove public IPs.
+version_added: "2.4"
 options:
   auth_token:
     description:
@@ -41,8 +40,7 @@ options:
     maxLength: 256
   datacenter:
     description:
-      - ID of the datacenter where the IP will be created (only for unassigned
-        IPs).
+      - ID of the datacenter where the IP will be created (only for unassigned IPs).
     type: 'string'
     required: false
   type:
@@ -52,19 +50,21 @@ options:
     choices: ["IPV4", "IPV6"]
     default: 'IPV4'
     required: false
+  public_ip_id:
+    description:
+      - The ID of the public IP used with update and delete states.
+    required: true
 
 requirements:
      - "1and1"
      - "python >= 2.6"
 
-author:
-  - Amel Ajdinovic (@aajdinov)
-  - Ethan Devenport (@edevenport)
+author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
 '''
 
 EXAMPLES = '''
 
-# Create a public IPs.
+# Create a public IP.
 
 - oneandone_public_ip:
     auth_token: oneandone_private_api_key
@@ -72,16 +72,27 @@ EXAMPLES = '''
     datacenter: US
     type: IPV4
 
+# Update a public IP.
+
+- oneandone_public_ip:
+    auth_token: oneandone_private_api_key
+    public_ip_id: public ip id
+    reverse_dns: secondexample.com
+    state: update
+
+
 # Delete a public IP
 
 - oneandone_public_ip:
     auth_token: oneandone_private_api_key
-    ip_id: 8D135204687B9CF9E79E7A93C096E336
+    public_ip_id: public ip id
+    state: absent
 
 '''
 
 import os
 import time
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -118,9 +129,8 @@ def _wait_for_public_ip_creation_completion(oneandone_conn,
             return
         elif public_ip['state'].lower() == 'failed':
             raise Exception('Public IP creation ' +
-                            ' failed for %' % public_ip['id'])
-        elif public_ip['state'].lower() in ('active',
-                                            'configuring'):
+                            ' failed for %s' % public_ip['id'])
+        elif public_ip['state'].lower() == 'configuring':
             continue
         else:
             raise Exception(
@@ -142,7 +152,7 @@ def create_public_ip(module, oneandone_conn):
     """
     reverse_dns = module.params.get('reverse_dns')
     datacenter = module.params.get('datacenter')
-    type = module.params.get('type')
+    ip_type = module.params.get('type')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
@@ -155,7 +165,7 @@ def create_public_ip(module, oneandone_conn):
     try:
         public_ip = oneandone_conn.create_public_ip(
             reverse_dns=reverse_dns,
-            ip_type=type,
+            ip_type=ip_type,
             datacenter_id=datacenter_id)
 
         if wait:
@@ -166,8 +176,8 @@ def create_public_ip(module, oneandone_conn):
         changed = True if public_ip else False
 
         return (changed, public_ip)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def update_public_ip(module, oneandone_conn):
@@ -181,13 +191,13 @@ def update_public_ip(module, oneandone_conn):
     any public IP was changed.
     """
     reverse_dns = module.params.get('reverse_dns')
-    public_ip_id = module.params.get('id')
+    public_ip_id = module.params.get('public_ip_id')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
     changed = False
 
-    public_ip = oneandone_conn.get_public_ip(oneandone_conn, public_ip_id)
+    public_ip = oneandone_conn.get_public_ip(ip_id=public_ip_id)
     if public_ip is None:
         module.fail_json(
             msg='public IP %s not found.' % public_ip_id)
@@ -205,8 +215,8 @@ def update_public_ip(module, oneandone_conn):
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         return (changed, public_ip)
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def delete_public_ip(module, oneandone_conn):
@@ -219,9 +229,9 @@ def delete_public_ip(module, oneandone_conn):
     Returns a dictionary containing a 'changed' attribute indicating whether
     any public IP was deleted.
     """
-    public_ip_id = module.params.get('id')
+    public_ip_id = module.params.get('public_ip_id')
 
-    public_ip = oneandone_conn.get_public_ip(oneandone_conn, public_ip_id)
+    public_ip = oneandone_conn.get_public_ip(public_ip_id)
     if public_ip is None:
         module.fail_json(
             msg='public IP %s not found.' % public_ip_id)
@@ -235,8 +245,8 @@ def delete_public_ip(module, oneandone_conn):
         return (changed, {
             'id': public_ip['id']
         })
-    except Exception as e:
-        module.fail_json(msg=str(e))
+    except Exception as ex:
+        module.fail_json(msg=str(ex))
 
 
 def main():
@@ -244,7 +254,9 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
+                no_log=True),
+            public_ip_id=dict(type='str'),
             reverse_dns=dict(type='str'),
             datacenter=dict(
                 choices=DATACENTERS,
@@ -273,25 +285,30 @@ def main():
     state = module.params.get('state')
 
     if state == 'absent':
+        if not module.params.get('public_ip_id'):
+            module.fail_json(
+                msg="'public_ip_id' parameter is required to delete a public ip.")
         try:
             (changed, public_ip) = delete_public_ip(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
     elif state == 'update':
+        if not module.params.get('public_ip_id'):
+            module.fail_json(
+                msg="'public_ip_id' parameter is required to update a public ip.")
         try:
             (changed, public_ip) = update_public_ip(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
-    elif state in ('present'):
+    elif state == 'present':
         try:
             (changed, public_ip) = create_public_ip(module, oneandone_conn)
-        except Exception as e:
-            module.fail_json(msg=str(e))
+        except Exception as ex:
+            module.fail_json(msg=str(ex))
 
     module.exit_json(changed=changed, public_ip=public_ip)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Update monitoring policy processes
+      oneandone_monitoring_policy:
+        monitoring_policy: ansible monitoring policy updated
+        update_processes:
+         - 
+           id: process_id
+           process: test_1
+           alert_if: NOT_RUNNING
+           email_notification: false
+         -
+           id: process_id
+           process: test_3
+           alert_if: NOT_RUNNING
+           email_notification: false
+        wait: true
+        state: update

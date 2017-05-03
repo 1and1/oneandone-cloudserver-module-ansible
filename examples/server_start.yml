@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Start the server
+      oneandone_server:
+        instance_ids: 
+         - server_id
+        state: running
+        wait: true
