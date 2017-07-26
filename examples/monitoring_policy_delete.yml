@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Delete a monitoring policy
+      oneandone_monitoring_policy:
+        name: ansible monitoring policy
+        state: absent

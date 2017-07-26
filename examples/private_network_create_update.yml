@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+
+    - name: Create a private network
+      oneandone_private_network:
+        name: ansible_private_network
+        description: Testing creation of a private network with ansible
+        network_address: 70.35.193.100
+        subnet_mask: 255.0.0.0
+        datacenter: DE
+        wait: false
+
+    - name: Update a private network
+      oneandone_private_network:
+        description: Testing the update of a private network with ansible
+        network_address: 192.168.1.1
+        subnet_mask: 255.255.255.0
+        datacenter: DE
+        wait: false
+        state: update

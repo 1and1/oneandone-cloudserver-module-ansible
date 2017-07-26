@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+    - name: Create a server
+      oneandone:
+        hostname: server%02d
+        description: testing server creation with ansible
+        auto_increment: true
+        appliance: 8E3BAA98E3DFD37857810E0288DD8FBA
+        fixed_instance_size: S
+        datacenter: US
+        state: present

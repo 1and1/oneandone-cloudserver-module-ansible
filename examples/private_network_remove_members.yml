@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: True
+
+  tasks:
+
+    - name: Remove members
+      oneandone_private_network:
+        name: backup_network
+        remove_members:
+         - 8A7D5122BDC173B6E52223878CEF2748
+        state: add_remove_member
+        wait: false
