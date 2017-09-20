@@ -228,8 +228,10 @@ HAS_ONEANDONE_SDK = True
 
 try:
     import oneandone.client
+    from ansible.module_utils.six.moves import xrange
 except ImportError:
     HAS_ONEANDONE_SDK = False
+    xrange = None
 
 DATACENTERS = ['US', 'ES', 'DE', 'GB']
 
