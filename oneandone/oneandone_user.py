@@ -102,7 +102,9 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -220,8 +222,8 @@ def _modify_user_api(module, oneandone_conn, user_id, active):
         user = oneandone_conn.modify_user_api(user_id=user_id, active=active)
 
         return user
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _change_api_key(module, oneandone_conn, user_id):
@@ -232,8 +234,8 @@ def _change_api_key(module, oneandone_conn, user_id):
         user = oneandone_conn.change_api_key(user_id=user_id)
 
         return user
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _add_user_ip(module, oneandone_conn, user_id, user_ips):
@@ -246,8 +248,8 @@ def _add_user_ip(module, oneandone_conn, user_id, user_ips):
             user_ips=user_ips)
 
         return user
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _remove_user_ip(module, oneandone_conn, user_id, user_ip):
@@ -260,8 +262,8 @@ def _remove_user_ip(module, oneandone_conn, user_id, user_ip):
             ip=user_ip)
 
         return user
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def update_user(module, oneandone_conn):
@@ -330,8 +332,8 @@ def update_user(module, oneandone_conn):
                 oneandone_conn, user['id'], wait_timeout, wait_interval)
 
         return (changed, user)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def create_user(module, oneandone_conn):
@@ -363,8 +365,8 @@ def create_user(module, oneandone_conn):
         changed = True if user else False
 
         return (changed, user)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def remove_user(module, oneandone_conn):
@@ -386,8 +388,8 @@ def remove_user(module, oneandone_conn):
             'id': user['id'],
             'name': user['name']
         })
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def main():
@@ -439,16 +441,16 @@ def main():
                 msg="'name' parameter is required to delete a user.")
         try:
             (changed, user) = remove_user(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
     elif state == 'update':
         if not module.params.get('user'):
             module.fail_json(
                 msg="'user' parameter is required to update a user.")
         try:
             (changed, user) = update_user(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     elif state == 'present':
         for param in ('name', 'password'):
@@ -457,8 +459,8 @@ def main():
                     msg="%s parameter is required for new users." % param)
         try:
             (changed, user) = create_user(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     module.exit_json(changed=changed, user=user)
 

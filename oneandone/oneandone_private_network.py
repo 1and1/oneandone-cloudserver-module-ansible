@@ -89,7 +89,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -251,8 +254,8 @@ def _add_member(module, oneandone_conn, name, members):
                                                       server_ids=members)
 
         return network
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _remove_member(module, oneandone_conn, name, member_id):
@@ -314,8 +317,8 @@ def create_network(module, oneandone_conn):
         changed = True if network else False
 
         return (changed, network)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def update_network(module, oneandone_conn):
@@ -393,8 +396,8 @@ def remove_network(module, oneandone_conn):
             'id': private_network['id'],
             'name': private_network['name']
         })
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def main():
@@ -444,24 +447,24 @@ def main():
                 msg="'name' parameter is required for deleting a network.")
         try:
             (changed, private_network) = remove_network(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
     elif state == 'update':
         if not module.params.get('private_network'):
             module.fail_json(
                 msg="'private_network' parameter is required for updating a network.")
         try:
             (changed, private_network) = update_network(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
     elif state == 'present':
         if not module.params.get('name'):
             module.fail_json(
                 msg="'name' parameter is required for new networks.")
         try:
             (changed, private_network) = create_network(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     module.exit_json(changed=changed, private_network=private_network)
 

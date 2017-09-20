@@ -199,8 +199,8 @@ def create_public_ip(module, oneandone_conn):
         changed = True if public_ip else False
 
         return (changed, public_ip)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def update_public_ip(module, oneandone_conn):
@@ -239,8 +239,8 @@ def update_public_ip(module, oneandone_conn):
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         return (changed, public_ip)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def delete_public_ip(module, oneandone_conn):
@@ -269,8 +269,8 @@ def delete_public_ip(module, oneandone_conn):
         return (changed, {
             'id': public_ip['id']
         })
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def main():
@@ -319,22 +319,22 @@ def main():
                 msg="'public_ip_id' parameter is required to delete a public ip.")
         try:
             (changed, public_ip) = delete_public_ip(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
     elif state == 'update':
         if not module.params.get('public_ip_id'):
             module.fail_json(
                 msg="'public_ip_id' parameter is required to update a public ip.")
         try:
             (changed, public_ip) = update_public_ip(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     elif state == 'present':
         try:
             (changed, public_ip) = create_public_ip(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     module.exit_json(changed=changed, public_ip=public_ip)
 

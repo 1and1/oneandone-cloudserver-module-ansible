@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
-ANSIBLE_METADATA = {'metadata_version': '1.0',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-
+ANSIBLE_METADATA = {
+    'metadata_version': '1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
 
 DOCUMENTATION = '''
 ---
@@ -149,13 +150,16 @@ options:
       - When creating multiple machines at once, whether to differentiate
         hostnames by appending a count after them or substituting the count
         where there is a %02d or %03d in the hostname string.
-    default: "yes"
-    choices: [ "yes", "no" ]
+    default: yes
+    choices: ["yes", "no"]
 
 requirements:
   - "1and1"
   - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -229,7 +233,7 @@ changed:
     returned: always
 machines:
     description: Information about each machine that was processed
-    type: list
+    type: array
     sample: '[{"hostname": "my-server", "id": "server-id"}]'
     returned: always
 '''
@@ -396,7 +400,11 @@ def _create_machine(module, oneandone_conn, hostname, description,
                     fixed_instance_size_id, vcore, cores_per_processor, ram,
                     hdds, datacenter_id, appliance_id, ssh_key,
                     private_network_id, firewall_policy_id, load_balancer_id,
+<<<<<<< c9b453a0dfde131ede9d42df6d85a1a292551e49
                     monitoring_policy_id, server_type, wait, wait_timeout, wait_interval):
+=======
+                    monitoring_policy_id, wait, wait_timeout, wait_interval):
+>>>>>>> Add support for custom API_URL
 
     try:
         machine = oneandone_conn.create_server(

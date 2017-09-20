@@ -122,7 +122,9 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 import os
@@ -194,8 +196,8 @@ def _modify_role_permissions(module, oneandone_conn, role_id,
                                                  interactive_invoices=interactive_invoices)
 
         return role
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _add_users_to_role(module, oneandone_conn, role_id, users):
@@ -204,8 +206,8 @@ def _add_users_to_role(module, oneandone_conn, role_id, users):
                                         users=users)
 
         return role
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _remove_users_from_role(module, oneandone_conn, role_id, users):
@@ -216,8 +218,8 @@ def _remove_users_from_role(module, oneandone_conn, role_id, users):
                                               user_id=user_id)
 
         return role
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def _clone_role(module, oneandone_conn, role_id, name):
@@ -226,8 +228,8 @@ def _clone_role(module, oneandone_conn, role_id, name):
                                          name=name)
 
         return role
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def update_role(module, oneandone_conn):
@@ -328,8 +330,8 @@ def update_role(module, oneandone_conn):
                 oneandone_conn, role, wait_timeout, wait_interval)
 
         return (changed, role)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def should_update_permissions(servers, images, shared_storages, firewalls,
@@ -367,8 +369,8 @@ def create_role(module, oneandone_conn):
         changed = True if role else False
 
         return (changed, role)
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def remove_role(module, oneandone_conn):
@@ -390,8 +392,8 @@ def remove_role(module, oneandone_conn):
             'id': role['id'],
             'name': role['name']
         })
-    except Exception as ex:
-        module.fail_json(msg=str(ex))
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
 
 def main():
@@ -456,16 +458,16 @@ def main():
                 msg="'name' parameter is required to delete a role.")
         try:
             (changed, role) = remove_role(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
     elif state == 'update':
         if not module.params.get('role'):
             module.fail_json(
                 msg="'role' parameter is required to update a role.")
         try:
             (changed, role) = update_role(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     elif state == 'present':
         if not module.params.get('name'):
@@ -473,8 +475,8 @@ def main():
                 msg="'name' parameter is required for new roles.")
         try:
             (changed, role) = create_role(module, oneandone_conn)
-        except Exception as ex:
-            module.fail_json(msg=str(ex))
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     module.exit_json(changed=changed, role=role)
 
