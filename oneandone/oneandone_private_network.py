@@ -65,7 +65,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -162,11 +165,10 @@ def _find_private_network(oneandone_conn, private_network):
 
 
 def _wait_for_network_creation_completion(oneandone_conn,
-                                          network,
-                                          wait_timeout):
+                                          network, wait_timeout, wait_interval):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
-        time.sleep(5)
+        time.sleep(wait_interval)
 
         # Refresh the network info
         network = oneandone_conn.get_private_network(network['id'])
@@ -261,6 +263,7 @@ def create_network(module, oneandone_conn):
     datacenter = module.params.get('datacenter')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     if datacenter is not None:
         datacenter_id = _find_datacenter(oneandone_conn, datacenter)
@@ -282,7 +285,8 @@ def create_network(module, oneandone_conn):
             _wait_for_network_creation_completion(
                 oneandone_conn,
                 network,
-                wait_timeout)
+                wait_timeout,
+                wait_interval)
             network = _find_private_network(oneandone_conn,
                                             network['id'])
 
@@ -377,8 +381,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
-                no_log=True),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+            api_url=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_API_URL')),
             private_network_id=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),
@@ -390,6 +396,7 @@ def main():
                 choices=DATACENTERS),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
+            wait_interval=dict(type='int', default=5),
             state=dict(type='str', default='present'),
         )
     )
@@ -401,10 +408,12 @@ def main():
         module.fail_json(
             msg='auth_token parameter is required.')
 
-    auth_token = module.params.get('auth_token')
-
-    oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=auth_token)
+    if not module.params.get('api_url'):
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'))
+    else:
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'), api_url=module.params.get('api_url'))
 
     state = module.params.get('state')
 

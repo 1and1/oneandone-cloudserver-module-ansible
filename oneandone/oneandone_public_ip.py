@@ -59,7 +59,9 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -117,10 +119,10 @@ def _find_datacenter(oneandone_conn, datacenter):
 
 
 def _wait_for_public_ip_creation_completion(oneandone_conn,
-                                            public_ip, wait_timeout):
+                                            public_ip, wait_timeout, wait_interval):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
-        time.sleep(5)
+        time.sleep(wait_interval)
 
         # Refresh the public IP info
         public_ip = oneandone_conn.get_public_ip(public_ip['id'])
@@ -155,6 +157,7 @@ def create_public_ip(module, oneandone_conn):
     ip_type = module.params.get('type')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     if datacenter is not None:
         datacenter_id = _find_datacenter(oneandone_conn, datacenter)
@@ -170,7 +173,7 @@ def create_public_ip(module, oneandone_conn):
 
         if wait:
             _wait_for_public_ip_creation_completion(
-                oneandone_conn, public_ip, wait_timeout)
+                oneandone_conn, public_ip, wait_timeout, wait_interval)
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         changed = True if public_ip else False
@@ -194,6 +197,7 @@ def update_public_ip(module, oneandone_conn):
     public_ip_id = module.params.get('public_ip_id')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     changed = False
 
@@ -211,7 +215,7 @@ def update_public_ip(module, oneandone_conn):
 
         if wait:
             _wait_for_public_ip_creation_completion(
-                oneandone_conn, public_ip, wait_timeout)
+                oneandone_conn, public_ip, wait_timeout, wait_interval)
             public_ip = oneandone_conn.get_public_ip(public_ip['id'])
 
         return (changed, public_ip)
@@ -254,8 +258,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
-                no_log=True),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+            api_url=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_API_URL')),
             public_ip_id=dict(type='str'),
             reverse_dns=dict(type='str'),
             datacenter=dict(
@@ -266,6 +272,7 @@ def main():
                 default='IPV4'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
+            wait_interval=dict(type='int', default=5),
             state=dict(type='str', default='present'),
         )
     )
@@ -277,10 +284,12 @@ def main():
         module.fail_json(
             msg='auth_token parameter is required.')
 
-    auth_token = module.params.get('auth_token')
-
-    oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=auth_token)
+    if not module.params.get('api_url'):
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'))
+    else:
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'), api_url=module.params.get('api_url'))
 
     state = module.params.get('state')
 

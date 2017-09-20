@@ -141,7 +141,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -261,10 +264,10 @@ HEALTH_CHECK_TESTS = ['NONE', 'TCP', 'HTTP', 'ICMP']
 METHODS = ['ROUND_ROBIN', 'LEAST_CONNECTIONS']
 
 
-def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, wait_timeout):
+def _wait_for_load_balancer_creation_completion(oneandone_conn, load_balancer, wait_timeout, wait_interval):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
-        time.sleep(5)
+        time.sleep(wait_interval)
 
         # Refresh the load balancer info
         load_balancer = oneandone_conn.get_load_balancer(load_balancer['id'])
@@ -494,6 +497,7 @@ def create_load_balancer(module, oneandone_conn):
         rules = module.params.get('rules')
         wait = module.params.get('wait')
         wait_timeout = module.params.get('wait_timeout')
+        wait_interval = module.params.get('wait_interval')
 
         load_balancer_rules = []
 
@@ -532,7 +536,7 @@ def create_load_balancer(module, oneandone_conn):
 
         if wait:
             _wait_for_load_balancer_creation_completion(
-                oneandone_conn, load_balancer, wait_timeout)
+                oneandone_conn, load_balancer, wait_timeout, wait_interval)
 
         changed = True if load_balancer else False
 
@@ -568,8 +572,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
-                no_log=True),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+            api_url=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_API_URL')),
             load_balancer_id=dict(type='str'),
             name=dict(type='str'),
             description=dict(type='str'),
@@ -591,6 +597,7 @@ def main():
             remove_rules=dict(type='list', default=[]),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
+            wait_interval=dict(type='int', default=5),
             state=dict(type='str', default='present'),
         )
     )
@@ -602,10 +609,12 @@ def main():
         module.fail_json(
             msg='auth_token parameter is required.')
 
-    auth_token = module.params.get('auth_token')
-
-    oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=auth_token)
+    if not module.params.get('api_url'):
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'))
+    else:
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'), api_url=module.params.get('api_url'))
 
     state = module.params.get('state')
 

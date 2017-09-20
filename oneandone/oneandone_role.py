@@ -98,7 +98,9 @@ requirements:
      - "1and1"
      - "python >= 2.6"
 
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 import os
@@ -126,10 +128,10 @@ def _find_role(oneandone_conn, role):
             return _role
 
 
-def _wait_for_role_creation_completion(oneandone_conn, role, wait_timeout):
+def _wait_for_role_creation_completion(oneandone_conn, role, wait_timeout, wait_interval):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
-        time.sleep(5)
+        time.sleep(wait_interval)
 
         # Refresh the role info
         role = oneandone_conn.get_role(role['id'])
@@ -238,6 +240,7 @@ def update_role(module, oneandone_conn):
     _role_clone_name = module.params.get('role_clone_name')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     changed = False
 
@@ -300,7 +303,7 @@ def update_role(module, oneandone_conn):
 
         if wait:
             _wait_for_role_creation_completion(
-                oneandone_conn, role, wait_timeout)
+                oneandone_conn, role, wait_timeout, wait_interval)
 
         return (changed, role)
     except Exception as ex:
@@ -330,13 +333,14 @@ def create_role(module, oneandone_conn):
     name = module.params.get('name')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     try:
         role = oneandone_conn.create_role(name=name)
 
         if wait:
             _wait_for_role_creation_completion(
-                oneandone_conn, role, wait_timeout)
+                oneandone_conn, role, wait_timeout, wait_interval)
 
         changed = True if role else False
 
@@ -373,8 +377,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
-                no_log=True),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+            api_url=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_API_URL')),
             name=dict(type='str'),
             description=dict(type='str'),
             role_state=dict(
@@ -401,6 +407,7 @@ def main():
             role_clone_name=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
+            wait_interval=dict(type='int', default=5),
             state=dict(type='str', default='present'),
         )
     )
@@ -412,10 +419,12 @@ def main():
         module.fail_json(
             msg='auth_token parameter is required.')
 
-    auth_token = module.params.get('auth_token')
-
-    oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=auth_token)
+    if not module.params.get('api_url'):
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'))
+    else:
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'), api_url=module.params.get('api_url'))
 
     state = module.params.get('state')
 

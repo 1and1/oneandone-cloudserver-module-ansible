@@ -139,7 +139,10 @@ options:
 requirements:
   - "1and1"
   - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
@@ -325,10 +328,10 @@ def _find_machine(oneandone_conn, instance):
 
 
 def _wait_for_machine_creation_completion(oneandone_conn,
-                                          machine, wait_timeout):
+                                          machine, wait_timeout, wait_interval):
     wait_timeout = time.time() + wait_timeout
     while wait_timeout > time.time():
-        time.sleep(5)
+        time.sleep(wait_interval)
 
         # Refresh the machine info
         machine = oneandone_conn.get_server(machine['id'])
@@ -375,7 +378,7 @@ def _create_machine(module, oneandone_conn, hostname, description,
                     fixed_instance_size_id, vcore, cores_per_processor, ram,
                     hdds, datacenter_id, appliance_id, ssh_key,
                     private_network_id, firewall_policy_id, load_balancer_id,
-                    monitoring_policy_id, wait, wait_timeout):
+                    monitoring_policy_id, wait, wait_timeout, wait_interval):
 
     try:
         machine = oneandone_conn.create_server(
@@ -396,7 +399,7 @@ def _create_machine(module, oneandone_conn, hostname, description,
 
         if wait:
             _wait_for_machine_creation_completion(
-                oneandone_conn, machine, wait_timeout)
+                oneandone_conn, machine, wait_timeout, wait_interval)
             machine = oneandone_conn.get_server(machine['id'])  # refresh
 
         return machine
@@ -442,6 +445,7 @@ def create_machine(module, oneandone_conn):
     load_balancer = module.params.get('load_balancer')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
+    wait_interval = module.params.get('wait_interval')
 
     datacenter_id = _find_datacenter(oneandone_conn, datacenter)
     if datacenter_id is None:
@@ -534,7 +538,8 @@ def create_machine(module, oneandone_conn):
                 firewall_policy_id=firewall_policy_id,
                 load_balancer_id=load_balancer_id,
                 wait=wait,
-                wait_timeout=wait_timeout))
+                wait_timeout=wait_timeout,
+                wait_interval=wait_interval))
 
     changed = True if machines else False
     machines = [_insert_network_data(machine) for machine in machines]
@@ -701,8 +706,10 @@ def main():
         argument_spec=dict(
             auth_token=dict(
                 type='str',
-                default=os.environ.get('ONEANDONE_AUTH_TOKEN'),
-                no_log=True),
+                default=os.environ.get('ONEANDONE_AUTH_TOKEN')),
+            api_url=dict(
+                type='str',
+                default=os.environ.get('ONEANDONE_API_URL')),
             hostname=dict(type='str'),
             description=dict(type='str'),
             appliance=dict(type='str'),
@@ -724,6 +731,7 @@ def main():
             monitoring_policy=dict(type='str'),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
+            wait_interval=dict(type='int', default=5),
             state=dict(type='str', default='present'),
         ),
         mutually_exclusive=(['fixed_instance_size', 'vcore'], ['fixed_instance_size', 'cores_per_processor'],
@@ -739,8 +747,12 @@ def main():
             msg='The "auth_token" parameter or ' +
             'ONEANDONE_AUTH_TOKEN environment variable is required.')
 
-    oneandone_conn = oneandone.client.OneAndOneService(
-        api_token=module.params.get('auth_token'))
+    if not module.params.get('api_url'):
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'))
+    else:
+        oneandone_conn = oneandone.client.OneAndOneService(
+            api_token=module.params.get('auth_token'), api_url=module.params.get('api_url'))
 
     state = module.params.get('state')
 
