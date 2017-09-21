@@ -37,10 +37,6 @@ options:
     description:
       - The identifier (id or name) of the load balancer used with update state.
     required: true
-  load_balancer:
-    description:
-      - The identifier (id or name) of the load balancer used with update state.
-    required: true
   api_url:
     description:
       - Custom API URL. Overrides the
@@ -165,7 +161,10 @@ options:
 requirements:
      - "1and1"
      - "python >= 2.6"
-author: "Amel Ajdinovic (@aajdinov), Ethan Devenport (@edevenport)"
+
+author:
+  - Amel Ajdinovic (@aajdinov)
+  - Ethan Devenport (@edevenport)
 '''
 
 EXAMPLES = '''
