@@ -33,6 +33,11 @@ options:
     description:
       - Authenticating API token provided by 1&1.
     required: true
+  api_url:
+    description:
+      - Custom API URL. Overrides the
+        ONEANDONE_API_URL environement variable.
+    required: false  
   name:
     description:
       - Monitoring policy name used with present state. Used as identifier (id or name) when used with absent state.
@@ -268,6 +273,20 @@ options:
           - Case of alert.
         choices: [ "RUNNING", "NOT_RUNNING" ]
         required: true
+  wait:
+    description:
+      - wait for the instance to be in state 'running' before returning
+    required: false
+    default: "yes"
+    choices: [ "yes", "no" ]
+  wait_timeout:
+    description:
+      - how long before wait gives up, in seconds
+    default: 600
+  wait_interval:
+    description:
+      - Defines the number of seconds to wait when using the _wait_for methods
+    default: 5      
 
 requirements:
      - "1and1"

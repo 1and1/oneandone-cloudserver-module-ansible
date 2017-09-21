@@ -39,6 +39,11 @@ options:
       - Authenticating API token provided by 1&1. Overrides the
         ONEANDONE_AUTH_TOKEN environement variable.
     required: true
+  api_url:
+    description:
+      - Custom API URL. Overrides the
+        ONEANDONE_API_URL environement variable.
+    required: false 
   datacenter:
     description:
       - The datacenter location.
@@ -128,6 +133,10 @@ options:
     description:
       - how long before wait gives up, in seconds
     default: 600
+   wait_interval:
+    description:
+      - Defines the number of seconds to wait when using the _wait_for methods
+    default: 5 
   auto_increment:
     description:
       - When creating multiple machines at once, whether to differentiate
@@ -174,6 +183,7 @@ EXAMPLES = '''
     count: 3
     wait: yes
     wait_timeout: 600
+    wait_interval: 10
     ssh_key: SSH_PUBLIC_KEY
 
 # Removing machines
