@@ -140,6 +140,7 @@ EXAMPLES = '''
 
 import os
 import time
+from ansible.module_utils.basic import AnsibleModule
 
 HAS_ONEANDONE_SDK = True
 
@@ -348,6 +349,5 @@ def main():
     module.exit_json(changed=changed, vpn=vpn)
 
 
-from ansible.module_utils.basic import AnsibleModule
-
-main()
+if __name__ == '__main__':
+    main()
