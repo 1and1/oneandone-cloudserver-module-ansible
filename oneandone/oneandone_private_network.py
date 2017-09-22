@@ -26,6 +26,7 @@ module: oneandone_private_network
 short_description: Configure 1&1 private networking.
 description:
      - Create, remove, reconfigure, update a private network.
+       This module has a dependency on 1and1 >= 1.0
 version_added: "2.4"
 options:
   state:

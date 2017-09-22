@@ -26,6 +26,7 @@ short_description: Create, destroy, start, stop, and reboot a 1&1 Host machine.
 description:
      - Create, destroy, update, start, stop, and reboot a 1&1 Host machine.
        When the machine is created it can optionally wait for it to be 'running' before returning.
+       This module has a dependency on 1and1 >= 1.0
 version_added: "2.4"
 options:
   state:

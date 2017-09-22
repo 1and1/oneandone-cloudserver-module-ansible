@@ -26,6 +26,7 @@ module: oneandone_firewall_policy
 short_description: Configure 1&1 firewall policy.
 description:
      - Create, remove, reconfigure, update firewall policies.
+       This module has a dependency on 1and1 >= 1.0
 version_added: "2.4"
 options:
   state:

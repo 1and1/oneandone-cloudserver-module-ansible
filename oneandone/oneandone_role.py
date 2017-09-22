@@ -25,8 +25,9 @@ DOCUMENTATION = '''
 module: oneandone_role
 short_description: Configure 1&1 roles.
 description:
-     - Create, remove, and update a role.
-version_added: "2.1"
+     - Create, remove, update a role
+       This module has a dependency on 1and1 >= 1.0
+version_added: "2.4"
 options:
   state:
     description:

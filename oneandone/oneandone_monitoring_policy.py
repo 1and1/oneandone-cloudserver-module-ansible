@@ -27,6 +27,7 @@ short_description: Configure 1&1 monitoring policy.
 description:
      - Create, remove, update monitoring policies
        (and add/remove ports, processes, and servers).
+       This module has a dependency on 1and1 >= 1.0
 version_added: "2.4"
 options:
   auth_token:
