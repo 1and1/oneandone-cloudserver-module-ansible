@@ -151,6 +151,7 @@ The 1&1 Cloud Server module includes two resource parameters to address this sce
 
 * **wait** (default: true)
 * **wait_timeout** (default: 600 seconds)
+* **wait_interval** (default: 5 seconds)
 
 By default, the module will wait until a resource is finished provisioning before continuing to process further resources defined in the Playbook.
 
@@ -203,6 +204,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | hostname | **yes** | string | none | The name of the server(s). |
 | fixed_instance_size | **yes** * | string | none | Size of the ID desired for the server. ('S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL') |
 | vcore | **yes** * | int | none | The total number of processors. |
@@ -223,6 +225,7 @@ The following parameters are supported:
 | count | no | integer | 1 | The number of servers to create. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. </br>Also used for delete operation (set to 'false' if you don't want to wait for each individual server to be deleted before moving on with other tasks.) |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create or terminate instances: **present**, absent, running, stopped |
 
 ** * ** - The server can be created using pre-defined instance sizes or by providing your own custom hardware values. If custom values are provided, then all four items must be provided (`vcore`, `cores_per_processor`, `ram`, and `hdds`).
@@ -260,6 +263,7 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | Firewall policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | firewall_policy | **yes** * | string | none | Firewall policy identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | rules | **yes** | array | none | A list of rules that will be set for the firewall policy. Each rule must contain **`protocol`** parameter, in addition to three optional parameters: `port_from`, `port_to`, and `source` |
 | protocol | **yes** | string | none | Internet protocol ('TCP', 'UDP', 'ICMP', 'AH', 'ESP', 'GRE') |
 | port_from | no | integer | none | First port in range. Required for UDP and TCP protocols, otherwise it will be set up automatically. |
@@ -271,6 +275,7 @@ The following parameters are supported:
 | remove_server_ips | no | array | none | A list of server IP ids to be unassigned  from a firewall policy. Used in combination with **`update`** state. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a firewall policy: **present**, absent, update |
 
 ### oneandone_load_balancer
@@ -312,6 +317,7 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | Load balancer name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | load_balancer | **yes** * | string | none | Load balancer identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | health_check_test | **yes** | string | none | Type of the health check. At the moment, HTTP is not allowed. ('NONE', 'TCP', 'HTTP', 'ICMP') |
 | health_check_interval | **yes** | integer | none | Health check period in seconds (5 - 300) |
 | persistence | **yes** | boolean | none | Persistence |
@@ -332,6 +338,7 @@ The following parameters are supported:
 | health_check_parse | no| string | none | Regular expression to check. Required for HTTP health check. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a load balancer: **present**, absent, update |
 
 ### oneandone_monitoring_policy
@@ -414,6 +421,7 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | Monitoring policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | monitoring_policy | **yes** * | string | none | Monitoring policy identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | agent | **yes** | string | none | Set true for using agent. |
 | email | **yes** | string | none | User's email. |
 | thresholds | **yes** | array | none | A list of five threshold objects that must be provided to be set for the monitoring policy (**`cpu`**, **`ram`**, **`disk`**, **`internal_ping`**, and **`transfer`**). Each of those five threshold objects must contain **`warning`** and **`critical`** objects, each of which must contain **`alert`** and **`value`** parameters.  |
@@ -445,6 +453,7 @@ The following parameters are supported:
 | remove_servers | no | array | none | A list of server ids to be detached  from the monitoring policy. Used in combination with **`update`** state. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a monitoring policy: **present**, absent, update |
 
 ### oneandone_private_network
@@ -499,6 +508,7 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | Private network name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | private_network | **yes** * | string | none | Private network identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | description | no | string | none | Private network description. |
 | datacenter | no | string | none | ID of the datacenter where the private network will be created. ('US', 'ES', 'DE', 'GB') |
 | network_address | no | string | none | Private network address (valid IP). |
@@ -507,6 +517,7 @@ The following parameters are supported:
 | remove_members | no | string | none | Array of desired servers ids to be detached from a private network.|
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, update a private network, attach/detach servers to/from a private network: **present**, absent, update |
 
 ### oneandone_public_ip
@@ -535,11 +546,13 @@ The following parameters are supported:
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | public_ip_id | **yes** * | string | none | ID or of the public IP that will be used in update or delete requests. Required for `absent` and `update` states. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | datacenter | no | string | 'US' | ID of the datacenter where the IP will be created (only for unassigned IPs). ('US', 'ES', 'DE', 'GB') |
 | reverse_dns | no | string | none | Reverse DNS name. |
 | type | no | string | 'IPV4' | Type of IP. Currently, only IPV4 is supported. ('IPV4', 'IPV6') |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a public ip: **present**, absent, and update. |
 
 ### oneandone_vpn
@@ -570,10 +583,12 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | VPN name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | vpn | **yes** * | string | none | VPN identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | description | no | string | none | VPN description. |
 | datacenter | no | string | none | ID of the datacenter where the VPN will be created. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
 
 ### oneandone_users
@@ -605,6 +620,8 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | User's name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | user | **yes** * | string | none | User identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
+| description | no | string | none | User's description. |
 | password | **yes** | string | none | User's password. Pass must contain at least 8 characters using uppercase letters, numbers and other special symbols. |
 | description | no | string | none | User's description. |
 | email | no | string | none | User's e-mail. |
@@ -615,6 +632,7 @@ The following parameters are supported:
 | change_api_key | no | string | none | User's API key (token for accessing the API) will be changed to the provided value. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a user: **present**, absent, and update. |
 
 ### oneandone_roles
@@ -643,6 +661,7 @@ The following parameters are supported:
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
 | name | **yes** | string | none | Role name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | role | **yes** * | string | none | Role identifier (id or name). Must be provided with `update` state. |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | description | no | string | none | Role description. |
 | role_state | no | string | none | Allows to enable or disable the role. ('ACTIVE', 'DISABLE') |
 | servers | no | object | none | Servers permissions object attributes (boolean values)</br> `show`- Allows to list servers. </br> `create`- Allows to create servers. </br> `delete`- Allows to delete servers. </br> `set_name`- Allows to change server name. </br> `set_description`- Allows to change server description. </br> `start`- Allows to start servers. </br> `restart`- Allows to restart servers. </br> `shutdown`- Allows to shutdown servers. </br> `resize`- Allows to resize servers. </br> `reinstall`- Allows to reinstall servers. </br> `clone`- Allows to clone servers. </br> `manage_snapshot`- Allows to manage snapshots. </br> `assign_ip`- Allows to assign new IPs </br> `manage_dvd`- Allows to manage DVD images. </br> `access_kvm_console`- Allows to access servers using KVM console. |
@@ -666,6 +685,7 @@ The following parameters are supported:
 | role_clone_name | no | string | none | A name that will be assigned to the cloned role. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
+| wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
 | state | no | string | present | Create, delete, or update a VPN: **present**, absent, and update. |
 
 ## Examples
