@@ -261,6 +261,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | Firewall policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | firewall_policy | **yes** * | string | none | Firewall policy identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -315,6 +316,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | Load balancer name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | load_balancer | **yes** * | string | none | Load balancer identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -419,6 +421,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | Monitoring policy name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | monitoring_policy | **yes** * | string | none | Monitoring policy identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -506,6 +509,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | Private network name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | private_network | **yes** * | string | none | Private network identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -545,6 +549,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | public_ip_id | **yes** * | string | none | ID or of the public IP that will be used in update or delete requests. Required for `absent` and `update` states. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | datacenter | no | string | 'US' | ID of the datacenter where the IP will be created (only for unassigned IPs). ('US', 'ES', 'DE', 'GB') |
@@ -581,6 +586,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | VPN name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | vpn | **yes** * | string | none | VPN identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -618,6 +624,8 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
+| description | no | string | none | User's description. |
 | name | **yes** | string | none | User's name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | user | **yes** * | string | none | User identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
@@ -659,6 +667,7 @@ The following parameters are supported:
 | Name | Required | Type | Default | Description |
 | --- | :-: | --- | --- | --- |
 | auth_token | **yes** | string | none | Used for authorization of the request towards the API. This token can be obtained from the CloudPanel in the Management-section below Users.hostname |
+| api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
 | name | **yes** | string | none | Role name used with `present` state. Used as identifier (id or name) when used with `absent` state. |
 | role | **yes** * | string | none | Role identifier (id or name). Must be provided with `update` state. |
 | api_url | **yes** | string | https://cloudpanel-api.1and1.com/v1 | Used when providing a custom API URL |
