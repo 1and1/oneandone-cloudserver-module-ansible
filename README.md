@@ -32,7 +32,7 @@ Version: **oneandone-cloudserver-module-ansible v1.0.0**
 
 ## Description
 
-Ansible is an IT automation tool that allows users to configure, deploy, and orchestrate advanced tasks such as continuous deployments or zero-downtime rolling updates. The 1&1 Cloud Server module for Ansible leverages the 1&1 Cloud Server API.
+Ansible is an IT automation tool that allows users to configure, deploy, and orchestrate advanced tasks such as continuous deployments or zero-downtime rolling updates. The 1&1 Cloud Server module for Ansible leverages the 1&1 Cloud Server API. For more information on the Ansible Module see the [1&1 Community Portal](https://www.1and1.com/cloud-community/).
 
 ## Getting Started
 
