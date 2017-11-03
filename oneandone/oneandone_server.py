@@ -400,11 +400,8 @@ def _create_machine(module, oneandone_conn, hostname, description,
                     fixed_instance_size_id, vcore, cores_per_processor, ram,
                     hdds, datacenter_id, appliance_id, ssh_key,
                     private_network_id, firewall_policy_id, load_balancer_id,
-<<<<<<< c9b453a0dfde131ede9d42df6d85a1a292551e49
-                    monitoring_policy_id, server_type, wait, wait_timeout, wait_interval):
-=======
-                    monitoring_policy_id, wait, wait_timeout, wait_interval):
->>>>>>> Add support for custom API_URL
+                    monitoring_policy_id, server_type, wait, wait_timeout,
+                    wait_interval):
 
     try:
         machine = oneandone_conn.create_server(
@@ -467,6 +464,7 @@ def create_machine(module, oneandone_conn):
     appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
     private_network = module.params.get('private_network')
+    server_type = module.params.get('server_type')
     monitoring_policy = module.params.get('monitoring_policy')
     firewall_policy = module.params.get('firewall_policy')
     load_balancer = module.params.get('load_balancer')
