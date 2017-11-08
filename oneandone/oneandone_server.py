@@ -121,6 +121,12 @@ options:
       - User's public SSH key (contents, not path).
     required: false
     default: None
+  server_type:
+    description:
+      - The type of server to be built.
+    required: false
+    default: "cloud"
+    choices: [ "cloud", "baremetal", "k8s_node" ]
   wait:
     description:
       - Wait for the instance to be in state 'running' before returning.
@@ -246,7 +252,7 @@ except ImportError:
 
 DATACENTERS = ['US', 'ES', 'DE', 'GB']
 
-SERVER_TYPES = ['cloud', 'baremetal', 'K8S']
+SERVER_TYPES = ['cloud', 'baremetal', 'k8s_node']
 
 ONEANDONE_MACHINE_STATES = (
     'DEPLOYING',
