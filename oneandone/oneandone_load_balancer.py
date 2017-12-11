@@ -41,7 +41,7 @@ options:
     description:
       - Custom API URL. Overrides the
         ONEANDONE_API_URL environement variable.
-    required: false  
+    required: false
   name:
     description:
       - Load balancer name used with present state. Used as identifier (id or name) when used with absent state.
@@ -156,7 +156,7 @@ options:
   wait_interval:
     description:
       - Defines the number of seconds to wait when using the _wait_for methods
-    default: 5  
+    default: 5
 
 requirements:
      - "1and1"

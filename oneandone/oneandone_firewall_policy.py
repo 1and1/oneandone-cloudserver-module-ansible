@@ -113,7 +113,7 @@ options:
   wait_interval:
     description:
       - Defines the number of seconds to wait when using the _wait_for methods
-    default: 5 
+    default: 5
 
 requirements:
      - "1and1"
@@ -211,7 +211,6 @@ EXAMPLES = '''
 
 '''
 
-from copy import copy
 import time
 import os
 from ansible.module_utils.basic import AnsibleModule
