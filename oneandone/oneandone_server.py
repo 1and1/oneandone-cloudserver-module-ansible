@@ -122,12 +122,6 @@ options:
       - User's public SSH key (contents, not path).
     required: false
     default: None
-  server_type:
-    description:
-      - The type of server to be built.
-    required: false
-    default: "cloud"
-    choices: [ "cloud", "baremetal", "k8s_node" ]
   wait:
     description:
       - Wait for the instance to be in state 'running' before returning.
@@ -252,8 +246,6 @@ except ImportError:
     xrange = None
 
 DATACENTERS = ['US', 'ES', 'DE', 'GB']
-
-SERVER_TYPES = ['cloud', 'baremetal', 'k8s_node']
 
 ONEANDONE_MACHINE_STATES = (
     'DEPLOYING',
@@ -400,7 +392,7 @@ def _create_machine(module, oneandone_conn, hostname, description,
                     fixed_instance_size_id, vcore, cores_per_processor, ram,
                     hdds, datacenter_id, appliance_id, ssh_key,
                     private_network_id, firewall_policy_id, load_balancer_id,
-                    monitoring_policy_id, server_type, wait, wait_timeout,
+                    monitoring_policy_id, wait, wait_timeout,
                     wait_interval):
 
     try:
@@ -416,7 +408,6 @@ def _create_machine(module, oneandone_conn, hostname, description,
                 datacenter_id=datacenter_id,
                 rsa_key=ssh_key,
                 private_network_id=private_network_id,
-                server_type=server_type,
                 firewall_policy_id=firewall_policy_id,
                 load_balancer_id=load_balancer_id,
                 monitoring_policy_id=monitoring_policy_id,), hdds)
@@ -464,11 +455,9 @@ def create_machine(module, oneandone_conn):
     appliance = module.params.get('appliance')
     ssh_key = module.params.get('ssh_key')
     private_network = module.params.get('private_network')
-    server_type = module.params.get('server_type')
     monitoring_policy = module.params.get('monitoring_policy')
     firewall_policy = module.params.get('firewall_policy')
     load_balancer = module.params.get('load_balancer')
-    server_type = module.params.get('server_type')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
     wait_interval = module.params.get('wait_interval')
@@ -560,7 +549,6 @@ def create_machine(module, oneandone_conn):
                 appliance_id=appliance_id,
                 ssh_key=ssh_key,
                 private_network_id=private_network_id,
-                server_type=server_type,
                 monitoring_policy_id=monitoring_policy_id,
                 firewall_policy_id=firewall_policy_id,
                 load_balancer_id=load_balancer_id,
@@ -753,10 +741,6 @@ def main():
                 choices=DATACENTERS,
                 default='US'),
             private_network=dict(type='str'),
-            server_type=dict(
-                type='str',
-                choices=SERVER_TYPES,
-                default='cloud'),
             firewall_policy=dict(type='str'),
             load_balancer=dict(type='str'),
             monitoring_policy=dict(type='str'),
