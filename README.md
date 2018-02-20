@@ -223,6 +223,7 @@ The following parameters are supported:
 | ssh_key | no | string | none | Put a valid public SSH Key to be copied into the server during creation. Then you will be able to access to the server using your SSH keys. |
 | auto_increment | no | boolean | True | Whether or not to increment created servers. |
 | count | no | integer | 1 | The number of servers to create. |
+| keep_hdds | no | boolean | true | Flag to keep the storage when deleting servers. |
 | wait | no | boolean | true | Wait for the instance to be in state 'running' before continuing. </br>Also used for delete operation (set to 'false' if you don't want to wait for each individual server to be deleted before moving on with other tasks.) |
 | wait_timeout | no | integer | 600 | The number of seconds until the wait ends. |
 | wait_interval | no | integer | 5 | The number of seconds between each request to check status. |
