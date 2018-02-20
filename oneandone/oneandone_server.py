@@ -126,7 +126,7 @@ options:
     description:
       - Flag to keep the storage when deleting servers.
     required: false
-    default: false
+    default: true
   wait:
     description:
       - Wait for the instance to be in state 'running' before returning.
