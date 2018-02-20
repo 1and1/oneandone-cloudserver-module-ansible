@@ -122,6 +122,11 @@ options:
       - User's public SSH key (contents, not path).
     required: false
     default: None
+  keep_hdds:
+    description:
+      - Flag to keep the storage when deleting servers.
+    required: false
+    default: true
   wait:
     description:
       - Wait for the instance to be in state 'running' before returning.
@@ -574,6 +579,7 @@ def remove_machine(module, oneandone_conn):
     removed machines's hostname and id.
     """
     instance_ids = module.params.get('instance_ids')
+    keep_hdds = module.params.get('keep_hdds')
     wait = module.params.get('wait')
     wait_timeout = module.params.get('wait_timeout')
 
@@ -588,7 +594,7 @@ def remove_machine(module, oneandone_conn):
             continue
 
         try:
-            oneandone_conn.delete_server(server_id=machine['id'])
+            oneandone_conn.delete_server(server_id=machine['id'], keep_hdds=keep_hdds)
             if wait:
                 _wait_for_machine_deletion_completion(oneandone_conn, machine, wait_timeout)
             removed_machines.append(machine)
@@ -744,6 +750,7 @@ def main():
             firewall_policy=dict(type='str'),
             load_balancer=dict(type='str'),
             monitoring_policy=dict(type='str'),
+            keep_hdds=dict(type='bool', default=True),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             wait_interval=dict(type='int', default=5),
