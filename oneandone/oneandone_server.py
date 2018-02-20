@@ -750,7 +750,7 @@ def main():
             firewall_policy=dict(type='str'),
             load_balancer=dict(type='str'),
             monitoring_policy=dict(type='str'),
-            keep_hdds=dict(type='bool', default=False),
+            keep_hdds=dict(type='bool', default=True),
             wait=dict(type='bool', default=True),
             wait_timeout=dict(type='int', default=600),
             wait_interval=dict(type='int', default=5),
